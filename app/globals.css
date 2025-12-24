@@ -1,0 +1,422 @@
+/* Make sure this is at the top of your CSS file */
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* ---------- Brand Core ---------- */
+  --color-primary: #0047AB;
+  /* Royal Blue */
+  --color-secondary: #0A0A0A;
+  /* Deep Black */
+  --color-accent: #1E90FF;
+  /* Bright Blue Accent */
+  --color-destructive: #EF4444;
+  /* Red for errors/warnings */
+
+  /* ---------- Base ---------- */
+  --color-background: #FFFFFF;
+  /* Clean white base */
+  --color-foreground: #0F172A;
+  /* Dark slate for text */
+  --color-border: #E2E8F0;
+  /* Soft neutral border */
+  --color-input: #E2E8F0;
+  /* Matches borders */
+  --color-ring: #3B82F6;
+  /* Focus ring / highlight blue */
+  --color-muted: #94A3B8;
+  /* Muted gray for labels/text */
+
+  /* ---------- UI / Surface ---------- */
+  --color-popover: #F9FAFB;
+  /* Popover & card background */
+  --color-secondary-bg: #F6F6F7;
+  /* Light gray surface */
+
+  /* ---------- Dark Mode ---------- */
+  --color-darkPrimary: #000000;
+  /* Dark background */
+  --color-darkMain: #0047AB;
+  /* Royal Blue primary */
+  --color-darkAccent: #1E90FF;
+  /* Bright Blue accents */
+  --color-darkSurface: #0A0A0A;
+  /* Deep near-black */
+  --color-darkBorder: #1F2937;
+  /* Dark gray borders */
+  --color-darkText: #F5F5F7;
+  /* Light text for dark mode */
+}
+
+body {
+  background: #f8f8f8;
+  overflow-x: hidden;
+}
+
+.dark body {
+  background: #01030e;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Custom side scrollbar */
+.sideBar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sideBar::-webkit-scrollbar-track {
+  border-radius: 10px;
+  background: #f0f0f0;
+}
+
+.sideBar::-webkit-scrollbar-thumb {
+  background: rgb(192, 192, 192);
+  border-radius: 10px;
+}
+
+.sideBar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Custom side scrollbar - Dark Mode */
+.dark .sideBar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark .sideBar::-webkit-scrollbar-track {
+  border-radius: 10px;
+  background: #1a1a1a;
+  /* Darker background for dark mode */
+}
+
+.dark .sideBar::-webkit-scrollbar-thumb {
+  background: #444444;
+  /* Darker thumb for dark mode */
+  border-radius: 10px;
+}
+
+.dark .sideBar::-webkit-scrollbar-thumb:hover {
+  background: #666666;
+  /* Darker hover state for dark mode */
+}
+
+/* Easy use */
+.ani2 {
+  transition: all 0.2s ease-in-out !important;
+}
+
+.ani3 {
+  transition: all 0.3s ease-in-out !important;
+}
+
+.ani5 {
+  transition: all 0.5s ease-in-out !important;
+}
+
+.ani7 {
+  transition: all 0.7s ease-in-out !important;
+}
+
+/* position */
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* No scrollbar */
+.noBar::-webkit-scrollbar {
+  display: none;
+}
+
+.noBar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* select arrow  */
+.arrow {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  background: white url('data:image/svg+xml;utf8,<svg fill="%23000000" height="10px" width="9px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 330"><path d="M325.607,79.393c-5.857-5.857-15.355-5.858-21.213,0.001l-139.39,139.393L25.607,79.393 c-5.857-5.857-15.355-5.858-21.213,0.001c-5.858,5.858-5.858,15.355,0,21.213l150.004,150c2.813,2.813,6.628,4.393,10.606,4.393 s7.794-1.581,10.606-4.394l149.996-150C331.465,94.749,331.465,85.251,325.607,79.393z"></path></svg>') no-repeat;
+  background-position: calc(100% - 10px) center;
+  border: 1px solid #ccc;
+  padding-right: 30px;
+}
+
+/* Ripple animation */
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  animation: ripple 0.6s linear forwards;
+}
+
+/* TipTap Editor Styles */
+.ProseMirror:focus {
+  outline: none;
+}
+
+.ProseMirror p {
+  margin-bottom: 0.75em;
+}
+
+.ProseMirror h1 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror h2 {
+  font-size: 1.25em;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror h3 {
+  font-size: 1.125em;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #e2e8f0;
+  padding-left: 1em;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  margin: 0.5em 0;
+}
+
+.ProseMirror a {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.ProseMirror hr {
+  border: none;
+  border-top: 2px solid #e2e8f0;
+  margin: 1em 0;
+}
+
+.ProseMirror code {
+  background-color: #f1f5f9;
+  padding: 0.2em 0.4em;
+  border-radius: 0.25em;
+  font-family: monospace;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #94a3b8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Replace the image container styles with these improved styles */
+.image-container {
+  position: relative;
+  display: inline-block;
+  margin: 8px 0;
+  max-width: 100%;
+}
+
+.image-container img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid transparent;
+}
+
+.image-container:hover img {
+  border-color: #e2e8f0;
+}
+
+.image-container[data-alignment="left"] {
+  float: left;
+  margin-right: 16px;
+  margin-bottom: 8px;
+}
+
+.image-container[data-alignment="center"] {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.image-container[data-alignment="right"] {
+  float: right;
+  margin-left: 16px;
+  margin-bottom: 8px;
+}
+
+.resize-handles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: white;
+  border: 2px solid #3b82f6;
+  border-radius: 50%;
+  z-index: 10;
+  pointer-events: all;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.resize-handle-top-left {
+  top: -6px;
+  left: -6px;
+  cursor: nwse-resize;
+}
+
+.resize-handle-top-right {
+  top: -6px;
+  right: -6px;
+  cursor: nesw-resize;
+}
+
+.resize-handle-bottom-left {
+  bottom: -6px;
+  left: -6px;
+  cursor: nesw-resize;
+}
+
+.resize-handle-bottom-right {
+  bottom: -6px;
+  right: -6px;
+  cursor: nwse-resize;
+}
+
+.image-toolbar {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 4px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 20;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.image-container:hover .image-toolbar {
+  opacity: 1;
+}
+
+.image-toolbar button {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.image-toolbar button:hover {
+  background-color: #f8fafc;
+  color: #334155;
+}
+
+.image-toolbar button.active {
+  background-color: #eff6ff;
+  color: #3b82f6;
+  border-color: #bfdbfe;
+}
+
+.image-toolbar .delete-button:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+/* Remove the old resizable image styles */
+.resizable-image-wrapper,
+.drag-handle {
+  display: none;
+}
+
+/* Color picker tooltip */
+.tooltip-wrapper {
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s;
+  z-index: 20;
+}
+
+.tooltip-wrapper:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* minBody height screen */
+
+.minBody {
+  min-height: calc(100vh - 12.5vh);
+}
+
+.Body {
+  height: calc(100vh - 20.5vh);
+}

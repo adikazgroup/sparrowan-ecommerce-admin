@@ -1,0 +1,986 @@
+export const menuItems = [
+  /* 1) DASHBOARD */
+  {
+    id: 1,
+    name: "Dashboard",
+    key: "dashboard",
+    icon: "hugeicons:chart-bar-line",
+    path: "/",
+    items: [
+      {
+        parentId: 1,
+        subId: 11,
+        subIcon: "hugeicons:activity",
+        subName: "Real-time BI",
+        subPath: "/dashboard/real-time-bi",
+      },
+      {
+        parentId: 1,
+        subId: 12,
+        subIcon: "hugeicons:graph",
+        subName: "Sales Overview",
+        subPath: "/dashboard/sales-overview",
+      },
+      {
+        parentId: 1,
+        subId: 13,
+        subIcon: "hugeicons:box",
+        subName: "Top Products",
+        subPath: "/dashboard/top-products",
+      },
+      {
+        parentId: 1,
+        subId: 14,
+        subIcon: "hugeicons:bell-01",
+        subName: "Low Stock Alerts",
+        subPath: "/dashboard/low-stock-alerts",
+      },
+      {
+        parentId: 1,
+        subId: 15,
+        subIcon: "hugeicons:clipboard-list",
+        subName: "Recent Orders",
+        subPath: "/dashboard/recent-orders",
+      },
+      {
+        parentId: 1,
+        subId: 16,
+        subIcon: "hugeicons:users-02",
+        subName: "Acquisition Metrics",
+        subPath: "/dashboard/customer-acquisition",
+      },
+      {
+        parentId: 1,
+        subId: 17,
+        subIcon: "hugeicons:target-01",
+        subName: "Conversion Rate",
+        subPath: "/dashboard/conversion",
+      },
+      {
+        parentId: 1,
+        subId: 18,
+        subIcon: "hugeicons:wallet-03",
+        subName: "Average Order Value",
+        subPath: "/dashboard/aov",
+      },
+    ],
+  },
+
+  /* 2) PRODUCTS */
+  {
+    id: 2,
+    name: "Products",
+    key: "products",
+    icon: "oui:package",
+    items: [
+      {
+        parentId: 2,
+        subId: 21,
+        subIcon: "mdi:plus-box-outline",
+        subName: "Add Product",
+        subPath: "/products/add",
+      },
+      {
+        parentId: 2,
+        subId: 22,
+        subIcon: "fluent:arrow-sync-checkmark-24-regular",
+        subName: "Manage Products",
+        subPath: "/products/manage",
+      },
+      {
+        parentId: 2,
+        subId: 23,
+        subIcon: "hugeicons:duplicate",
+        subName: "Duplicate / Variants",
+        subPath: "/products/variants",
+      },
+      {
+        parentId: 2,
+        subId: 24,
+        subIcon: "hugeicons:database-export",
+        subName: "Import/Export",
+        subPath: "/products/bulk",
+      },
+      {
+        parentId: 2,
+        subId: 25,
+        subIcon: "hugeicons:tag-01",
+        subName: "Categories & Tags",
+        subPath: "/products/categories-tags",
+      },
+      {
+        parentId: 2,
+        subId: 26,
+        subIcon: "hugeicons:qrcode",
+        subName: "SKU & Barcode",
+        subPath: "/products/sku-barcode",
+      },
+      {
+        parentId: 2,
+        subId: 27,
+        subIcon: "hugeicons:search-01",
+        subName: "SEO & URLs",
+        subPath: "/products/seo",
+      },
+      {
+        parentId: 2,
+        subId: 28,
+        subIcon: "hugeicons:truck-delivery",
+        subName: "Suppliers",
+        subPath: "/products/suppliers",
+      },
+    ],
+  },
+
+  /* 3) INVENTORY */
+  {
+    id: 3,
+    name: "Inventory",
+    key: "inventory",
+    icon: "lsicon:inventory-outline",
+    items: [
+      {
+        parentId: 3,
+        subId: 31,
+        subIcon: "hugeicons:boxes-02",
+        subName: "Stock Levels",
+        subPath: "/inventory/stock-levels",
+      },
+      {
+        parentId: 3,
+        subId: 32,
+        subIcon: "hugeicons:warning-circle",
+        subName: "Low Stock Alerts",
+        subPath: "/inventory/low-stock",
+      },
+      {
+        parentId: 3,
+        subId: 33,
+        subIcon: "hugeicons:history",
+        subName: "Stock History",
+        subPath: "/inventory/history",
+      },
+      {
+        parentId: 3,
+        subId: 34,
+        subIcon: "hugeicons:location-01",
+        subName: "Locations",
+        subPath: "/inventory/locations",
+      },
+      {
+        parentId: 3,
+        subId: 35,
+        subIcon: "hugeicons:pencil-edit-02",
+        subName: "Adjustments",
+        subPath: "/inventory/adjustments",
+      },
+      {
+        parentId: 3,
+        subId: 36,
+        subIcon: "hugeicons:graph-up",
+        subName: "Valuation & Reports",
+        subPath: "/inventory/reports",
+      },
+      {
+        parentId: 3,
+        subId: 37,
+        subIcon: "hugeicons:archive-01",
+        subName: "Dead Stock",
+        subPath: "/inventory/dead-stock",
+      },
+    ],
+  },
+
+  /* 4) ORDERS */
+  {
+    id: 4,
+    name: "Orders",
+    key: "orders",
+    icon: "ph:handshake",
+    items: [
+      {
+        parentId: 4,
+        subId: 41,
+        subIcon: "hugeicons:inbox",
+        subName: "New Orders",
+        subPath: "/orders/new",
+      },
+      {
+        parentId: 4,
+        subId: 42,
+        subIcon: "hugeicons:checklist",
+        subName: "Processing",
+        subPath: "/orders/processing",
+      },
+      {
+        parentId: 4,
+        subId: 43,
+        subIcon: "hugeicons:package-send",
+        subName: "Fulfillment",
+        subPath: "/orders/fulfillment",
+      },
+      {
+        parentId: 4,
+        subId: 44,
+        subIcon: "hugeicons:label",
+        subName: "Shipping Labels",
+        subPath: "/orders/shipping-labels",
+      },
+      {
+        parentId: 4,
+        subId: 45,
+        subIcon: "hugeicons:route",
+        subName: "Tracking",
+        subPath: "/orders/tracking",
+      },
+      {
+        parentId: 4,
+        subId: 46,
+        subIcon: "hugeicons:rotate-left",
+        subName: "Returns & Refunds",
+        subPath: "/orders/returns",
+      },
+      {
+        parentId: 4,
+        subId: 47,
+        subIcon: "hugeicons:message-01",
+        subName: "Order Notes",
+        subPath: "/orders/notes",
+      },
+    ],
+  },
+
+  /* 5) SUPPORT / CUSTOMER SERVICE */
+  {
+    id: 5,
+    name: "Support",
+    key: "support",
+    icon: "ph:lifebuoy",
+    items: [
+      {
+        parentId: 5,
+        subId: 51,
+        subIcon: "hugeicons:ticket-02",
+        subName: "Tickets",
+        subPath: "/support/tickets",
+      },
+      {
+        parentId: 5,
+        subId: 52,
+        subIcon: "hugeicons:mail-01",
+        subName: "Email Inbox",
+        subPath: "/support/email",
+      },
+      {
+        parentId: 5,
+        subId: 53,
+        subIcon: "hugeicons:message-heart",
+        subName: "Response Templates",
+        subPath: "/support/templates",
+      },
+      {
+        parentId: 5,
+        subId: 54,
+        subIcon: "hugeicons:timer-02",
+        subName: "SLA Monitor",
+        subPath: "/support/sla",
+      },
+      {
+        parentId: 5,
+        subId: 55,
+        subIcon: "hugeicons:emoji-happy",
+        subName: "CSAT Tracking",
+        subPath: "/support/csat",
+      },
+    ],
+  },
+
+  /* 6) CUSTOMERS */
+  {
+    id: 6,
+    name: "Customers",
+    key: "customers",
+    icon: "mynaui:user-square",
+    items: [
+      {
+        parentId: 6,
+        subId: 61,
+        subIcon: "hugeicons:users-01",
+        subName: "Customer Database",
+        subPath: "/customers",
+      },
+      {
+        parentId: 6,
+        subId: 62,
+        subIcon: "hugeicons:bookmark-02",
+        subName: "Profiles & Notes",
+        subPath: "/customers/profiles",
+      },
+      {
+        parentId: 6,
+        subId: 63,
+        subIcon: "hugeicons:layers-01",
+        subName: "Segments",
+        subPath: "/customers/segments",
+      },
+      {
+        parentId: 6,
+        subId: 64,
+        subIcon: "hugeicons:star-badge",
+        subName: "Tiers & Loyalty",
+        subPath: "/customers/loyalty",
+      },
+      {
+        parentId: 6,
+        subId: 65,
+        subIcon: "hugeicons:map-01",
+        subName: "Geography",
+        subPath: "/customers/geography",
+      },
+    ],
+  },
+
+  /* 7) USERS & ACCESS */
+  {
+    id: 7,
+    name: "Users & Access",
+    key: "access",
+    icon: "clarity:employee-line",
+    items: [
+      {
+        parentId: 7,
+        subId: 71,
+        subIcon: "hugeicons:id",
+        subName: "Staff Accounts",
+        subPath: "/access/staff",
+      },
+      {
+        parentId: 7,
+        subId: 72,
+        subIcon: "hugeicons:key-square",
+        subName: "Roles & Permissions",
+        subPath: "/access/roles",
+      },
+      {
+        parentId: 7,
+        subId: 73,
+        subIcon: "hugeicons:lock",
+        subName: "2FA & Security",
+        subPath: "/access/security",
+      },
+      {
+        parentId: 7,
+        subId: 74,
+        subIcon: "hugeicons:activity-02",
+        subName: "Activity Logs",
+        subPath: "/access/logs",
+      },
+      {
+        parentId: 7,
+        subId: 75,
+        subIcon: "hugeicons:login-01",
+        subName: "Sessions",
+        subPath: "/access/sessions",
+      },
+    ],
+  },
+
+  /* 8) CONTENT */
+  {
+    id: 8,
+    name: "Content",
+    key: "content",
+    icon: "solar:document-add-linear",
+    items: [
+      {
+        parentId: 8,
+        subId: 81,
+        subIcon: "hugeicons:layout-01",
+        subName: "Pages",
+        subPath: "/content/pages",
+      },
+      {
+        parentId: 8,
+        subId: 82,
+        subIcon: "hugeicons:newspaper",
+        subName: "Blog / Articles",
+        subPath: "/content/blog",
+      },
+      {
+        parentId: 8,
+        subId: 83,
+        subIcon: "hugeicons:help-circle",
+        subName: "FAQ",
+        subPath: "/content/faq",
+      },
+      {
+        parentId: 8,
+        subId: 84,
+        subIcon: "hugeicons:file-shield",
+        subName: "Policy Pages",
+        subPath: "/content/policies",
+      },
+      {
+        parentId: 8,
+        subId: 85,
+        subIcon: "hugeicons:image-02",
+        subName: "Media Library",
+        subPath: "/content/media",
+      },
+    ],
+  },
+
+  /* 9) PROMOTIONS & MARKETING */
+  {
+    id: 9,
+    name: "Promotions",
+    key: "promotions",
+    icon: "hugeicons:discount",
+    items: [
+      {
+        parentId: 9,
+        subId: 91,
+        subIcon: "hugeicons:ticket-percent",
+        subName: "Coupons",
+        subPath: "/promotions/coupons",
+      },
+      {
+        parentId: 9,
+        subId: 92,
+        subIcon: "hugeicons:sparkles",
+        subName: "Discount Rules",
+        subPath: "/promotions/rules",
+      },
+      {
+        parentId: 9,
+        subId: 93,
+        subIcon: "hugeicons:calendar-02",
+        subName: "Seasonal Campaigns",
+        subPath: "/promotions/seasonal",
+      },
+      {
+        parentId: 9,
+        subId: 94,
+        subIcon: "hugeicons:mail-open",
+        subName: "Email Marketing",
+        subPath: "/promotions/email",
+      },
+      {
+        parentId: 9,
+        subId: 95,
+        subIcon: "hugeicons:split-square-horizontal",
+        subName: "A/B Testing",
+        subPath: "/promotions/ab-testing",
+      },
+      {
+        parentId: 9,
+        subId: 96,
+        subIcon: "hugeicons:chart-02",
+        subName: "Campaign Analytics",
+        subPath: "/promotions/analytics",
+      },
+    ],
+  },
+
+  /* 10) ANALYTICS & REPORTS */
+  {
+    id: 10,
+    name: "Analytics",
+    key: "analytics",
+    icon: "hugeicons:pie-chart-02",
+    items: [
+      {
+        parentId: 10,
+        subId: 101,
+        subIcon: "hugeicons:bar-line-chart",
+        subName: "Sales Reports",
+        subPath: "/analytics/sales",
+      },
+      {
+        parentId: 10,
+        subId: 102,
+        subIcon: "hugeicons:box-01",
+        subName: "Product Performance",
+        subPath: "/analytics/products",
+      },
+      {
+        parentId: 10,
+        subId: 103,
+        subIcon: "hugeicons:user-star",
+        subName: "Customer Metrics",
+        subPath: "/analytics/customers",
+      },
+      {
+        parentId: 10,
+        subId: 104,
+        subIcon: "hugeicons:target-02",
+        subName: "Conversion",
+        subPath: "/analytics/conversion",
+      },
+      {
+        parentId: 10,
+        subId: 105,
+        subIcon: "hugeicons:dashboard",
+        subName: "KPI Dashboard",
+        subPath: "/analytics/kpi",
+      },
+      {
+        parentId: 10,
+        subId: 106,
+        subIcon: "hugeicons:report-01",
+        subName: "Custom Reports",
+        subPath: "/analytics/custom",
+      },
+    ],
+  },
+
+  /* 11) SHIPPING */
+  {
+    id: 11,
+    name: "Shipping",
+    key: "shipping",
+    icon: "hugeicons:truck",
+    items: [
+      {
+        parentId: 11,
+        subId: 111,
+        subIcon: "hugeicons:globe-02",
+        subName: "Zones & Rates",
+        subPath: "/shipping/zones",
+      },
+      {
+        parentId: 11,
+        subId: 112,
+        subIcon: "hugeicons:link-01",
+        subName: "Carriers",
+        subPath: "/shipping/carriers",
+      },
+      {
+        parentId: 11,
+        subId: 113,
+        subIcon: "hugeicons:box-add",
+        subName: "Packages & Rules",
+        subPath: "/shipping/rules",
+      },
+      {
+        parentId: 11,
+        subId: 114,
+        subIcon: "hugeicons:airplane",
+        subName: "International",
+        subPath: "/shipping/international",
+      },
+      {
+        parentId: 11,
+        subId: 115,
+        subIcon: "hugeicons:printer",
+        subName: "Batch Labels",
+        subPath: "/shipping/batch-labels",
+      },
+      {
+        parentId: 11,
+        subId: 116,
+        subIcon: "hugeicons:timeline",
+        subName: "Delivery Times",
+        subPath: "/shipping/delivery-times",
+      },
+      {
+        parentId: 11,
+        subId: 117,
+        subIcon: "hugeicons:analytics",
+        subName: "Cost Analytics",
+        subPath: "/shipping/analytics",
+      },
+    ],
+  },
+
+  /* 12) PAYMENTS */
+  {
+    id: 12,
+    name: "Payments",
+    key: "payments",
+    icon: "hugeicons:credit-card",
+    items: [
+      {
+        parentId: 12,
+        subId: 121,
+        subIcon: "hugeicons:server-02",
+        subName: "Gateways",
+        subPath: "/payments/gateways",
+      },
+      {
+        parentId: 12,
+        subId: 122,
+        subIcon: "hugeicons:receipt",
+        subName: "Transactions",
+        subPath: "/payments/transactions",
+      },
+      {
+        parentId: 12,
+        subId: 123,
+        subIcon: "hugeicons:rotate-left",
+        subName: "Refunds",
+        subPath: "/payments/refunds",
+      },
+      {
+        parentId: 12,
+        subId: 124,
+        subIcon: "hugeicons:shield-warning",
+        subName: "Disputes & Fraud",
+        subPath: "/payments/disputes-fraud",
+      },
+      {
+        parentId: 12,
+        subId: 125,
+        subIcon: "hugeicons:globe",
+        subName: "Currencies",
+        subPath: "/payments/currencies",
+      },
+      {
+        parentId: 12,
+        subId: 126,
+        subIcon: "hugeicons:tax",
+        subName: "Taxes",
+        subPath: "/payments/taxes",
+      },
+    ],
+  },
+
+  /* 13) SETTINGS */
+  {
+    id: 13,
+    name: "Settings",
+    key: "settings",
+    icon: "hugeicons:settings-02",
+    items: [
+      {
+        parentId: 13,
+        subId: 131,
+        subIcon: "hugeicons:store-01",
+        subName: "Store Info",
+        subPath: "/settings/store",
+      },
+      {
+        parentId: 13,
+        subId: 132,
+        subIcon: "hugeicons:shopping-bag-02",
+        subName: "Checkout",
+        subPath: "/settings/checkout",
+      },
+      {
+        parentId: 13,
+        subId: 133,
+        subIcon: "hugeicons:bell-02",
+        subName: "Notifications",
+        subPath: "/settings/notifications",
+      },
+      {
+        parentId: 13,
+        subId: 134,
+        subIcon: "hugeicons:wrench",
+        subName: "Maintenance Mode",
+        subPath: "/settings/maintenance",
+      },
+      {
+        parentId: 13,
+        subId: 135,
+        subIcon: "hugeicons:database",
+        subName: "Backup",
+        subPath: "/settings/backup",
+      },
+      {
+        parentId: 13,
+        subId: 136,
+        subIcon: "hugeicons:monitor-01",
+        subName: "Interface & UX",
+        subPath: "/settings/interface",
+      },
+    ],
+  },
+
+  /* 14) SECURITY & COMPLIANCE */
+  {
+    id: 14,
+    name: "Security",
+    key: "security",
+    icon: "solar:shield-linear",
+    items: [
+      {
+        parentId: 14,
+        subId: 141,
+        subIcon: "hugeicons:file-search-02",
+        subName: "Access Logs",
+        subPath: "/security/access-logs",
+      },
+      {
+        parentId: 14,
+        subId: 142,
+        subIcon: "hugeicons:radar",
+        subName: "Security Monitor",
+        subPath: "/security/monitor",
+      },
+      {
+        parentId: 14,
+        subId: 143,
+        subIcon: "hugeicons:lock-01",
+        subName: "Encryption",
+        subPath: "/security/encryption",
+      },
+      {
+        parentId: 14,
+        subId: 144,
+        subIcon: "hugeicons:shield-02",
+        subName: "Privacy & GDPR",
+        subPath: "/security/privacy-gdpr",
+      },
+      {
+        parentId: 14,
+        subId: 145,
+        subIcon: "hugeicons:download-01",
+        subName: "Data Export",
+        subPath: "/security/data-export",
+      },
+    ],
+  },
+
+  /* 15) BUSINESS INTELLIGENCE */
+  {
+    id: 15,
+    name: "BI Studio",
+    key: "bi",
+    icon: "hugeicons:brain",
+    items: [
+      {
+        parentId: 15,
+        subId: 151,
+        subIcon: "hugeicons:report-02",
+        subName: "Report Builder",
+        subPath: "/bi/report-builder",
+      },
+      {
+        parentId: 15,
+        subId: 152,
+        subIcon: "hugeicons:export-02",
+        subName: "Data Exports",
+        subPath: "/bi/exports",
+      },
+      {
+        parentId: 15,
+        subId: 153,
+        subIcon: "hugeicons:medal-star",
+        subName: "Benchmarking",
+        subPath: "/bi/benchmarking",
+      },
+      {
+        parentId: 15,
+        subId: 154,
+        subIcon: "hugeicons:chart-trend",
+        subName: "Predictive",
+        subPath: "/bi/predictive",
+      },
+      {
+        parentId: 15,
+        subId: 155,
+        subIcon: "hugeicons:dashboard-02",
+        subName: "KPI Dashboards",
+        subPath: "/bi/kpi",
+      },
+      {
+        parentId: 15,
+        subId: 156,
+        subIcon: "hugeicons:wallet-02",
+        subName: "Financials",
+        subPath: "/bi/financials",
+      },
+    ],
+  },
+
+  /* 16) AUTOMATION */
+  {
+    id: 16,
+    name: "Automation",
+    key: "automation",
+    icon: "hugeicons:bot",
+    items: [
+      {
+        parentId: 16,
+        subId: 161,
+        subIcon: "hugeicons:refresh-cw-02",
+        subName: "Workflows",
+        subPath: "/automation/workflows",
+      },
+      {
+        parentId: 16,
+        subId: 162,
+        subIcon: "hugeicons:box-refresh",
+        subName: "Auto Reordering",
+        subPath: "/automation/reordering",
+      },
+      {
+        parentId: 16,
+        subId: 163,
+        subIcon: "hugeicons:message-time",
+        subName: "Follow-ups",
+        subPath: "/automation/followups",
+      },
+      {
+        parentId: 16,
+        subId: 164,
+        subIcon: "hugeicons:sparkles-02",
+        subName: "Marketing Auto",
+        subPath: "/automation/marketing",
+      },
+      {
+        parentId: 16,
+        subId: 165,
+        subIcon: "hugeicons:calendar-check-01",
+        subName: "Report Scheduling",
+        subPath: "/automation/reports",
+      },
+      {
+        parentId: 16,
+        subId: 166,
+        subIcon: "hugeicons:bell-notification-02",
+        subName: "Alerts",
+        subPath: "/automation/alerts",
+      },
+    ],
+  },
+
+  /* 17) INTEGRATIONS */
+  {
+    id: 17,
+    name: "Integrations",
+    key: "integrations",
+    icon: "hugeicons:puzzle",
+    items: [
+      {
+        parentId: 17,
+        subId: 171,
+        subIcon: "hugeicons:mail-02",
+        subName: "Email Providers",
+        subPath: "/integrations/email",
+      },
+      {
+        parentId: 17,
+        subId: 172,
+        subIcon: "hugeicons:calculator-01",
+        subName: "Accounting",
+        subPath: "/integrations/accounting",
+      },
+      {
+        parentId: 17,
+        subId: 173,
+        subIcon: "hugeicons:crm-01",
+        subName: "CRM",
+        subPath: "/integrations/crm",
+      },
+      {
+        parentId: 17,
+        subId: 174,
+        subIcon: "hugeicons:truck-delivery",
+        subName: "Carriers",
+        subPath: "/integrations/carriers",
+      },
+      {
+        parentId: 17,
+        subId: 175,
+        subIcon: "hugeicons:megaphone-01",
+        subName: "Marketing",
+        subPath: "/integrations/marketing",
+      },
+      {
+        parentId: 17,
+        subId: 176,
+        subIcon: "hugeicons:share-07",
+        subName: "Social Channels",
+        subPath: "/integrations/social",
+      },
+      {
+        parentId: 17,
+        subId: 177,
+        subIcon: "hugeicons:key-02",
+        subName: "API & Webhooks",
+        subPath: "/integrations/api",
+      },
+      {
+        parentId: 17,
+        subId: 178,
+        subIcon: "hugeicons:code-square",
+        subName: "Tracking Codes",
+        subPath: "/integrations/analytics",
+      },
+    ],
+  },
+
+  /* 18) DATA MANAGEMENT */
+  {
+    id: 18,
+    name: "Data",
+    key: "data",
+    icon: "hugeicons:database-02",
+    items: [
+      {
+        parentId: 18,
+        subId: 181,
+        subIcon: "hugeicons:download-02",
+        subName: "Export / Import",
+        subPath: "/data/import-export",
+      },
+      {
+        parentId: 18,
+        subId: 182,
+        subIcon: "hugeicons:database-restore",
+        subName: "Backups",
+        subPath: "/data/backups",
+      },
+      {
+        parentId: 18,
+        subId: 183,
+        subIcon: "hugeicons:broom",
+        subName: "Cleanup",
+        subPath: "/data/cleanup",
+      },
+      {
+        parentId: 18,
+        subId: 184,
+        subIcon: "hugeicons:flash",
+        subName: "Cache",
+        subPath: "/data/cache",
+      },
+      {
+        parentId: 18,
+        subId: 185,
+        subIcon: "hugeicons:speedometer-02",
+        subName: "Performance",
+        subPath: "/data/performance",
+      },
+      {
+        parentId: 18,
+        subId: 186,
+        subIcon: "hugeicons:terminal-square",
+        subName: "Log Files",
+        subPath: "/data/logs",
+      },
+    ],
+  },
+];
+
+// Role For Option
+
+export const userRoleOptions = [
+  { value: "user", label: "User" },
+  { value: "special-user", label: "Special User" },
+];
+
+export const employeRoleOptions = [
+  { value: "admin", label: "Admin" },
+  { value: "superAdmin", label: "Super Admin" },
+  { value: "account-manage", label: "Account Manage" },
+  { value: "content-manager", label: "Content Manage" },
+];
+
+export const userStatusOptions = [
+  { value: "", label: "All Status" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+];
