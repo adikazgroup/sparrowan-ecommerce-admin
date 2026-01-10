@@ -213,7 +213,7 @@ export default function AddBrandPage() {
                   value={formData.name}
                   onValueChange={handleNameChange}
                   error={errors.name}
-                  required
+                  requiredSign={true}
                 />
                 <Input
                   label="Slug"
@@ -221,7 +221,7 @@ export default function AddBrandPage() {
                   value={formData.slug}
                   onValueChange={handleSlugChange}
                   error={errors.slug}
-                  required
+                  requiredSign={true}
                 />
               </div>
               <Textarea

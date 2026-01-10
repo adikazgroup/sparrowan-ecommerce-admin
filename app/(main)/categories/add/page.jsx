@@ -209,7 +209,7 @@ export default function AddCategoryPage() {
                   value={formData.name}
                   onValueChange={handleNameChange}
                   error={errors.name}
-                  required
+                  requiredSign={true}
                 />
                 <Input
                   label="Slug"
@@ -217,7 +217,7 @@ export default function AddCategoryPage() {
                   value={formData.slug}
                   onValueChange={handleSlugChange}
                   error={errors.slug}
-                  required
+                  requiredSign={true}
                 />
               </div>
               <Select
@@ -227,7 +227,7 @@ export default function AddCategoryPage() {
                 onValueChange={(val) => handleInputChange("departmentId", val)}
                 placeholder="Select Department"
                 error={errors.departmentId}
-                required
+                requiredSign={true}
               />
               <Textarea
                 label="Description"

@@ -236,6 +236,7 @@ export default function TaxRuleForm({ selectedTaxRule, isEdit, onClose }) {
                 fullWidth
                 className="h-10"
                 placeholder="Select tax category"
+                requiredSign={true}
               />
               {errors.taxCategoryId && (
                 <p className="text-xs text-red-500 mt-1">
@@ -254,6 +255,7 @@ export default function TaxRuleForm({ selectedTaxRule, isEdit, onClose }) {
                   fullWidth
                   className="h-10"
                   placeholder="Select country"
+                  requiredSign={true}
                 />
                 {errors.country && (
                   <p className="text-xs text-red-500 mt-1">{errors.country}</p>
@@ -272,6 +274,7 @@ export default function TaxRuleForm({ selectedTaxRule, isEdit, onClose }) {
                     formData.country ? "Select state" : "Select country first"
                   }
                   disabled={!formData.country}
+                  requiredSign={true}
                 />
                 {errors.state && (
                   <p className="text-xs text-red-500 mt-1">{errors.state}</p>
@@ -287,6 +290,7 @@ export default function TaxRuleForm({ selectedTaxRule, isEdit, onClose }) {
                 onValueChange={(value) => handleInputChange("type", value)}
                 fullWidth
                 className="h-10"
+                requiredSign={true}
               />
 
               <Input

@@ -197,7 +197,7 @@ export default function AddChildCategoryPage() {
                   value={formData.name}
                   onValueChange={handleNameChange}
                   error={errors.name}
-                  required
+                  requiredSign={true}
                 />
                 <Input
                   label="Slug"
@@ -205,7 +205,7 @@ export default function AddChildCategoryPage() {
                   value={formData.slug}
                   onValueChange={handleSlugChange}
                   error={errors.slug}
-                  required
+                  requiredSign={true}
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -218,7 +218,7 @@ export default function AddChildCategoryPage() {
                   }
                   placeholder="Select Department"
                   error={errors.departmentId}
-                  required
+                  requiredSign={true}
                 />
                 <Select
                   label="Parent Sub-Category"
@@ -227,7 +227,7 @@ export default function AddChildCategoryPage() {
                   onValueChange={(val) => handleInputChange("parent", val)}
                   placeholder="Select Sub-Category"
                   error={errors.parent}
-                  required
+                  requiredSign={true}
                 />
               </div>
               <Textarea

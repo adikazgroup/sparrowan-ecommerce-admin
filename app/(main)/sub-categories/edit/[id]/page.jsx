@@ -255,7 +255,7 @@ export default function EditSubCategoryPage() {
                   value={formData.name}
                   onValueChange={handleNameChange}
                   error={errors.name}
-                  required
+                  requiredSign={true}
                 />
                 <Input
                   label="Slug"
@@ -263,7 +263,7 @@ export default function EditSubCategoryPage() {
                   value={formData.slug}
                   onValueChange={handleSlugChange}
                   error={errors.slug}
-                  required
+                  requiredSign={true}
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -276,7 +276,7 @@ export default function EditSubCategoryPage() {
                   }
                   placeholder="Select Department"
                   error={errors.departmentId}
-                  required
+                  requiredSign={true}
                 />
                 <Select
                   label="Parent Category"
@@ -285,7 +285,7 @@ export default function EditSubCategoryPage() {
                   onValueChange={(val) => handleInputChange("parent", val)}
                   placeholder="Select Parent Category"
                   error={errors.parent}
-                  required
+                  requiredSign={true}
                 />
               </div>
               <Textarea
