@@ -24,7 +24,7 @@ const Button = forwardRef(
       variant = "default",
       ...props
     },
-    ref
+    ref,
   ) => {
     const buttonRef = useRef(null);
     const [rippleEffect, setRippleEffect] = useState([]);
@@ -50,7 +50,7 @@ const Button = forwardRef(
 
       setTimeout(() => {
         setRippleEffect((prev) =>
-          prev.filter((ripple) => ripple.id !== rippleId)
+          prev.filter((ripple) => ripple.id !== rippleId),
         );
       }, 600);
     };
@@ -66,7 +66,7 @@ const Button = forwardRef(
       default: "bg-primary hover:bg-primary/90 border-transparent text-white",
       secondary:
         "bg-secondary text-secondary-foreground hover:bg-secondary/80 border-transparent",
-      outline: "border-input bg-background hover:bg-accent hover:text-white",
+      outline: "border-input bg-background hover:bg-gray-100",
       ghost: "hover:bg-secondary  border-transparent",
       destructive:
         "bg-destructive text-white hover:bg-destructive/90 border-transparent",
@@ -129,7 +129,7 @@ const Button = forwardRef(
           elevationStyles[elevation],
           fullWidth && "w-full",
           variant !== "link" && "active:translate-y-0.5 active:duration-75",
-          className
+          className,
         )}
         onClick={handleClick}
         {...props}
@@ -160,7 +160,7 @@ const Button = forwardRef(
           <LuLoader
             className={cn(
               "animate-spin",
-              size === "sm" ? "h-3 w-3" : "h-4 w-4"
+              size === "sm" ? "h-3 w-3" : "h-4 w-4",
             )}
           />
         )}
@@ -179,7 +179,7 @@ const Button = forwardRef(
         )}
       </button>
     );
-  }
+  },
 );
 
 Button.displayName = "Button";

@@ -1,17 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import toast from "react-hot-toast";
 import { signIn } from "next-auth/react";
-import logoImg from "@/public/img/logo/logo.svg";
 import { Input } from "@/components/ui/input/Input";
 import loginImg from "@/public/img/login/login2.png";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox/Checkbox";
 import { LuEye, LuEyeOff, LuMail, LuLock } from "react-icons/lu";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialValue = { email: "", password: "" };
@@ -43,13 +42,12 @@ export default function LoginPage() {
         toast.dismiss(loadingToast);
         toast.success("Login successful");
         setFormValues(initialValue);
-
         setTimeout(() => {
           router.push(redirectPath);
         }, 1500);
       } else {
         toast.dismiss(loadingToast);
-        toast.error("An unexpected error occurred=", { id: "login-error" });
+        toast.error("An unexpected error occurred", { id: "login-error" });
       }
     } catch (err) {
       toast.dismiss(loadingToast);
@@ -64,24 +62,19 @@ export default function LoginPage() {
     <div className="flex h-screen bg-white dark:bg-darkPrimary p-5">
       <div className="w-1/2 h-full bg-white border border-gray-200 rounded-2xl center flex-col relative overflow-hidden">
         <div className="w-0 h-0 border-l-[100px] border-l-transparent border-r-[100px] border-r-transparent border-b-[1080px] border-b-primary opacity-50 blur-3xl rotate-[-150deg] absolute top-0 -right-0 "></div>
-
         <div className="w-0 h-0 border-l-[100px] border-l-transparent border-r-[100px] border-r-transparent border-b-[980px] border-b-primary opacity-70 blur-3xl rotate-[50deg] absolute -top-80 -left-0 "></div>
-
         <Image
-          src={loginImg || "/placeholder.svg"}
+          src={loginImg}
           alt="login"
-          className=" rounded-2xl w-full h-full object-cover"
+          className="rounded-2xl w-full h-full object-cover"
         />
       </div>
 
-      <div className="w-1/2 h-full center ">
-        <div className="max-w-md w-md mx-auto ">
-          {/* <Image src={logoImg} alt="Logo" className="h-fit w-48" /> */}
-
+      <div className="w-1/2 h-full center">
+        <div className="max-w-md w-md mx-auto">
           <h1 className="text-xl font-semibold text-primary">
-            Sparrowan<span className=" text-secondary">X</span>
+            Sparrowan<span className="text-secondary">X</span>
           </h1>
-
           <h1 className="text-3xl font-medium mt-5">Log in to your account</h1>
           <p className="text-[#B0B0B0] mt-2">
             Enter your email & password to login
@@ -90,7 +83,7 @@ export default function LoginPage() {
           <form
             className="space-y-6 mt-10"
             onSubmit={handleSubmit}
-            autoComplete={"on"}
+            autoComplete="on"
           >
             <Input
               type="email"
@@ -100,15 +93,14 @@ export default function LoginPage() {
               fullWidth
               required
               value={formValues.email}
-              onValueChange={(value) => {
-                setFormValues((prev) => ({ ...prev, email: value }));
-              }}
+              onValueChange={(value) =>
+                setFormValues((prev) => ({ ...prev, email: value }))
+              }
               error={
                 formValues?.email && !formValues?.email?.includes("@")
                   ? "Please enter a valid email"
                   : ""
               }
-              // Enable browser's built-in remember me for email
               autoComplete={rememberMe ? "email" : "off"}
               name="email"
             />
@@ -135,10 +127,9 @@ export default function LoginPage() {
                 }
                 fullWidth
                 value={formValues.password}
-                onValueChange={(value) => {
-                  setFormValues((prev) => ({ ...prev, password: value }));
-                }}
-                // Enable browser's built-in remember me for password
+                onValueChange={(value) =>
+                  setFormValues((prev) => ({ ...prev, password: value }))
+                }
                 autoComplete={rememberMe ? "current-password" : "off"}
                 name="password"
               />
@@ -166,18 +157,17 @@ export default function LoginPage() {
                 </a>
               </div>
             </div>
+
             <button
               type="submit"
               disabled={isLoading}
               className="w-full bg-primary text-white py-2.5 text-sm rounded hover:bg-[#0056b3] transition duration-200 mt-5 disabled:bg-[#6ea8e0] disabled:cursor-not-allowed relative overflow-hidden"
             >
-              {/* Fixed button text conditional rendering */}
               {isLoading ? (
                 <span className="loader">Loading...</span>
               ) : (
                 "Log In"
               )}
-
               <div className="w-0 h-0 border-l-[40px] border-l-transparent border-r-[40px] border-r-transparent border-b-[280px] border-b-white opacity-70 blur-xl rotate-[50deg] absolute -top-32 -right-0 "></div>
               <div className="w-0 h-0 border-l-[40px] border-l-transparent border-r-[40px] border-r-transparent border-b-[280px] border-b-white opacity-70 blur-xl rotate-[70deg] absolute -top-32 -left-5 "></div>
             </button>
@@ -185,5 +175,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          Loading...
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

@@ -28,14 +28,14 @@ const Table = ({
 
   // Render table header
   const renderTableHeader = () => (
-    <thead className="bg-[#D5F9ED] dark:bg-[#161F2D] text-muted-foreground ">
+    <thead className="bg-[#DEEDFF] dark:bg-[#161F2D] text-muted-foreground">
       <tr>
         {columns.map((column) => (
           <th
             key={column.id}
             className={cn(
               "px-4 py-4 text-left text-sm font-medium whitespace-nowrap",
-              column.className
+              column.className,
             )}
             style={column.minWidth ? { minWidth: column.minWidth } : {}}
           >
@@ -52,14 +52,14 @@ const Table = ({
 
   // Render table rows
   const renderTableRows = () => (
-    <tbody className="divide-y divide-gray-100 dark:divide-[#212a36]">
+    <tbody className="divide-y divide-gray-200 dark:divide-[#212a36]">
       {data.length > 0 ? (
         data.map((row, rowIndex) => (
           <tr
             key={row.id || rowIndex}
             className={cn(
-              "hover:bg-secondary dark:hover:bg-[#161F2D] transition-colors",
-              onRowClick && "cursor-pointer"
+              "hover:bg-gray-50 dark:hover:bg-gray-100 transition-colors",
+              onRowClick && "cursor-pointer",
             )}
             onClick={() => onRowClick && onRowClick(row)}
           >

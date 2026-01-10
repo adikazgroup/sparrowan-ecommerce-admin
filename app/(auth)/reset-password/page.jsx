@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import toast from "react-hot-toast";
 import { useTheme } from "next-themes";
 import logoImg from "@/public/img/logo/logo.png";
@@ -12,7 +12,7 @@ import { useResetPasswordMutation } from "@/features/auth/authApiSlice";
 import forgotPassImgDark from "@/public/img/login/resetPasswordDark.png";
 import forgotPassImgLight from "@/public/img/login/resetPasswordLight.png";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
@@ -161,5 +161,19 @@ export default function ResetPasswordPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen bg-white dark:bg-darkPrimary p-5 items-center justify-center">
+          Loading...
+        </div>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

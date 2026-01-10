@@ -1,19 +1,23 @@
+import { buildQueryParams } from "@/utils/buildQueryParams";
 import { apiSlice } from "../api/apiSlice";
 
 const userApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get user list (GET)
     getUserList: builder.query({
-      query: (paramsQuery) => ({
-        url: `/user${paramsQuery}`,
-      }),
+      query: (data) => {
+        const params = buildQueryParams(data);
+        return {
+          url: `/admin/users${params}`,
+        };
+      },
       providesTags: ["users"],
     }),
 
     // Get user profile (GET)
     getProfile: builder.query({
       query: () => ({
-        url: "/user/profile",
+        url: "/users/me",
       }),
       providesTags: ["user"],
     }),
@@ -21,7 +25,7 @@ const userApiSlice = apiSlice.injectEndpoints({
     // Create user (POST)
     createUser: builder.mutation({
       query: (userData) => ({
-        url: "/user",
+        url: "/admin/users",
         method: "POST",
         body: userData,
       }),
@@ -31,7 +35,7 @@ const userApiSlice = apiSlice.injectEndpoints({
     // Update user (PATCH)
     updateUser: builder.mutation({
       query: ({ id, data }) => ({
-        url: `/user/${id}`,
+        url: `/admin/users/${id}`,
         method: "PATCH",
         body: data,
       }),
@@ -41,7 +45,7 @@ const userApiSlice = apiSlice.injectEndpoints({
     // Delete user (DELETE)
     deleteUser: builder.mutation({
       query: (id) => ({
-        url: `/user/${id}`,
+        url: `/admin/users/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["users"],
@@ -51,8 +55,8 @@ const userApiSlice = apiSlice.injectEndpoints({
 
 // Export hooks for using the defined API endpoints
 export const {
-  useCreateUserMutation,
   useGetUserListQuery,
+  useCreateUserMutation,
   useGetProfileQuery,
   useUpdateUserMutation,
   useDeleteUserMutation,
