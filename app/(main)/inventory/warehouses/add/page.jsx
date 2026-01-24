@@ -1,0 +1,248 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { LuArrowLeft, LuSave } from "react-icons/lu";
+import Link from "next/link";
+
+import { Input } from "@/components/ui/input/Input";
+import { Button } from "@/components/ui/button/Button";
+import { Select } from "@/components/ui/select/Select";
+import { useCreateWarehouseMutation } from "@/features/inventory/warehousesApiSlice";
+import { handleToast } from "@/utils/handleToast";
+import { statusOptions } from "@/utils/DataHelper";
+
+export default function AddWarehousePage() {
+  const router = useRouter();
+  const [createWarehouse, { isLoading }] = useCreateWarehouseMutation();
+
+  const [formData, setFormData] = useState({
+    name: "",
+    code: "",
+    isDefault: false,
+    status: "active",
+    address: { street: "", city: "", state: "", country: "", postalCode: "" },
+    contact: { name: "", phone: "", email: "" },
+  });
+  const [errors, setErrors] = useState({});
+
+  const handleInputChange = (field, value) => {
+    if (field.includes(".")) {
+      const [parent, child] = field.split(".");
+      setFormData((prev) => ({
+        ...prev,
+        [parent]: { ...prev[parent], [child]: value },
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (!formData.code.trim()) newErrors.code = "Code is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      toast.error("Please fix the errors");
+      return;
+    }
+
+    const loadingToast = toast.loading("Creating warehouse...");
+    const result = await createWarehouse(formData);
+    handleToast({
+      result,
+      type: result?.data ? "success" : "error",
+      id: "create-warehouse",
+      message: "Warehouse created!",
+    });
+    toast.dismiss(loadingToast);
+    if (result?.data) router.push("/inventory/warehouses");
+  };
+
+  return (
+    <div className="bg-white dark:bg-[#010611] minBody p-5 rounded-xl space-y-6">
+      <div className="flex items-center gap-3 border-b border-gray-200 dark:border-gray-800 pb-4">
+        <Link
+          href="/inventory/warehouses"
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <LuArrowLeft className="size-5" />
+        </Link>
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Add Warehouse
+          </h1>
+          <p className="text-sm text-gray-500">
+            Create a new warehouse location
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                Basic Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Warehouse Name"
+                  placeholder="Main Warehouse"
+                  value={formData.name}
+                  onValueChange={(val) => handleInputChange("name", val)}
+                  error={errors.name}
+                  requiredSign={true}
+                />
+                <Input
+                  label="Code"
+                  placeholder="WH-001"
+                  value={formData.code}
+                  onValueChange={(val) =>
+                    handleInputChange("code", val.toUpperCase())
+                  }
+                  error={errors.code}
+                  requiredSign={true}
+                />
+              </div>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                Address
+              </h2>
+              <Input
+                label="Street"
+                placeholder="123 Main St"
+                value={formData.address.street}
+                onValueChange={(val) =>
+                  handleInputChange("address.street", val)
+                }
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="City"
+                  placeholder="New York"
+                  value={formData.address.city}
+                  onValueChange={(val) =>
+                    handleInputChange("address.city", val)
+                  }
+                />
+                <Input
+                  label="State"
+                  placeholder="NY"
+                  value={formData.address.state}
+                  onValueChange={(val) =>
+                    handleInputChange("address.state", val)
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Country"
+                  placeholder="USA"
+                  value={formData.address.country}
+                  onValueChange={(val) =>
+                    handleInputChange("address.country", val)
+                  }
+                />
+                <Input
+                  label="Postal Code"
+                  placeholder="10001"
+                  value={formData.address.postalCode}
+                  onValueChange={(val) =>
+                    handleInputChange("address.postalCode", val)
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                Contact
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  label="Contact Name"
+                  placeholder="John Doe"
+                  value={formData.contact.name}
+                  onValueChange={(val) =>
+                    handleInputChange("contact.name", val)
+                  }
+                />
+                <Input
+                  label="Phone"
+                  placeholder="+1234567890"
+                  value={formData.contact.phone}
+                  onValueChange={(val) =>
+                    handleInputChange("contact.phone", val)
+                  }
+                />
+                <Input
+                  label="Email"
+                  placeholder="contact@warehouse.com"
+                  value={formData.contact.email}
+                  onValueChange={(val) =>
+                    handleInputChange("contact.email", val)
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                Settings
+              </h2>
+              <label className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isDefault}
+                  onChange={(e) =>
+                    handleInputChange("isDefault", e.target.checked)
+                  }
+                  className="w-4 h-4 text-primary"
+                />
+                <div>
+                  <p className="font-medium text-gray-800 dark:text-white text-sm">
+                    Default Warehouse
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Primary warehouse for orders
+                  </p>
+                </div>
+              </label>
+              <Select
+                label="Status"
+                options={statusOptions}
+                value={formData.status}
+                onValueChange={(val) => handleInputChange("status", val)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
+          <Link href="/inventory/warehouses">
+            <Button type="button" variant="outline">
+              Cancel
+            </Button>
+          </Link>
+          <Button type="submit" disabled={isLoading}>
+            <LuSave className="size-4" />
+            {isLoading ? "Creating..." : "Create Warehouse"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}

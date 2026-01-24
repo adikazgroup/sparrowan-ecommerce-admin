@@ -11,28 +11,33 @@ import { Button } from "@/components/ui/button/Button";
 import { Select } from "@/components/ui/select/Select";
 import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useCreateDepartmentMutation } from "@/features/departments/departmentsApiSlice";
+import { useGetTaxCategoriesIdNameQuery } from "@/features/taxCategories/taxCategoriesApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
-
-const statusOptions = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-];
+import { statusOptions } from "@/utils/DataHelper";
 
 const IMAGE_FORMATS = ["jpg", "jpeg", "png", "webp"];
-
-const getFileExtension = (filename) => {
-  return filename?.split(".").pop()?.toLowerCase() || "";
-};
+const getFileExtension = (filename) =>
+  filename?.split(".").pop()?.toLowerCase() || "";
 
 export default function AddDepartmentPage() {
   const router = useRouter();
   const [createDepartment, { isLoading }] = useCreateDepartmentMutation();
+  const { data: taxCategoriesData } = useGetTaxCategoriesIdNameQuery();
+
+  const taxCategoryOptions = [
+    { value: "", label: "No Tax Category" },
+    ...(taxCategoriesData?.data?.map((t) => ({
+      value: t.value,
+      label: t.label,
+    })) || []),
+  ];
 
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
     description: "",
+    taxCategory: "",
     metaTitle: "",
     metaDescription: "",
     status: "active",
@@ -43,15 +48,14 @@ export default function AddDepartmentPage() {
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  const generateSlug = (text) => {
-    return text
+  const generateSlug = (text) =>
+    text
       .trim()
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9-]/g, "-")
       .replace(/-+/g, "-")
       .replace(/^-+|-+$/g, "");
-  };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -59,11 +63,11 @@ export default function AddDepartmentPage() {
   };
 
   const handleNameChange = (value) => {
-    setFormData((prev) => {
-      const newState = { ...prev, name: value };
-      if (!isSlugManuallyEdited) newState.slug = generateSlug(value);
-      return newState;
-    });
+    setFormData((prev) => ({
+      ...prev,
+      name: value,
+      slug: isSlugManuallyEdited ? prev.slug : generateSlug(value),
+    }));
     if (errors.name) setErrors((prev) => ({ ...prev, name: "" }));
     if (!isSlugManuallyEdited && errors.slug)
       setErrors((prev) => ({ ...prev, slug: "" }));
@@ -79,7 +83,6 @@ export default function AddDepartmentPage() {
     if (!file) return;
     const ext = getFileExtension(file.name);
     const maxSize = 2 * 1024 * 1024;
-
     if (!IMAGE_FORMATS.includes(ext)) {
       toast.error("Only JPG, JPEG, PNG, WebP formats allowed");
       return;
@@ -88,7 +91,6 @@ export default function AddDepartmentPage() {
       toast.error("File size must be less than 2MB");
       return;
     }
-
     setFormData((prev) => ({
       ...prev,
       image: {
@@ -101,23 +103,17 @@ export default function AddDepartmentPage() {
   };
 
   const handleImageUpload = (e) => processImageFile(e.target.files?.[0]);
-
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
     processImageFile(e.dataTransfer.files?.[0]);
   };
-
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
   };
-
   const handleDragLeave = () => setIsDragging(false);
-
-  const removeImage = () => {
-    setFormData((prev) => ({ ...prev, image: null }));
-  };
+  const removeImage = () => setFormData((prev) => ({ ...prev, image: null }));
 
   const validateForm = () => {
     const newErrors = {};
@@ -138,6 +134,7 @@ export default function AddDepartmentPage() {
       name: formData.name,
       slug: formData.slug,
       description: formData.description || null,
+      taxCategory: formData.taxCategory || null,
       metaTitle: formData.metaTitle || null,
       metaDescription: formData.metaDescription || null,
       status: formData.status,
@@ -148,24 +145,18 @@ export default function AddDepartmentPage() {
 
     const loadingToast = toast.loading("Creating department...");
     const result = await createDepartment(generateFormData(payload));
-
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "create-department",
       message: "Department created successfully!",
     });
-
     toast.dismiss(loadingToast);
-
-    if (result?.data) {
-      router.push("/departments");
-    }
+    if (result?.data) router.push("/departments");
   };
 
   return (
     <div className="bg-white dark:bg-[#010611] minBody p-5 rounded-xl space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
         <div className="flex items-center gap-3">
           <Link
@@ -185,10 +176,8 @@ export default function AddDepartmentPage() {
         </div>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
@@ -223,6 +212,19 @@ export default function AddDepartmentPage() {
 
             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                Tax Settings
+              </h2>
+              <Select
+                label="Tax Category"
+                options={taxCategoryOptions}
+                value={formData.taxCategory}
+                onValueChange={(val) => handleInputChange("taxCategory", val)}
+                placeholder="Select Tax Category (Optional)"
+              />
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                 SEO Information
               </h2>
               <Input
@@ -243,7 +245,6 @@ export default function AddDepartmentPage() {
             </div>
           </div>
 
-          {/* Right Column */}
           <div className="space-y-6">
             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
@@ -272,11 +273,7 @@ export default function AddDepartmentPage() {
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
-                  className={`flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                    isDragging
-                      ? "border-primary bg-primary/5"
-                      : "border-gray-300 dark:border-gray-700 hover:border-primary hover:bg-gray-100 dark:hover:bg-gray-800"
-                  }`}
+                  className={`flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-gray-300 dark:border-gray-700 hover:border-primary hover:bg-gray-100 dark:hover:bg-gray-800"}`}
                 >
                   <LuImage className="size-10 text-gray-400 mb-2" />
                   <p className="text-sm text-gray-500">
@@ -303,7 +300,6 @@ export default function AddDepartmentPage() {
                 options={statusOptions}
                 value={formData.status}
                 onValueChange={(val) => handleInputChange("status", val)}
-                className="w-full"
               />
             </div>
           </div>

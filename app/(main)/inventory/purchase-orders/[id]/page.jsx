@@ -1,0 +1,405 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import Link from "next/link";
+import {
+  LuArrowLeft,
+  LuCheck,
+  LuPackage,
+  LuTruck,
+  LuWarehouse,
+  LuCalendar,
+  LuClock,
+  LuX,
+} from "react-icons/lu";
+
+import { Button } from "@/components/ui/button/Button";
+import { Input } from "@/components/ui/input/Input";
+import { PageSkeleton } from "@/components/skeleton/PageSkeleton";
+import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
+import {
+  useGetSinglePurchaseOrderQuery,
+  useConfirmPurchaseOrderMutation,
+  useReceivePurchaseOrderItemsMutation,
+} from "@/features/inventory/purchaseOrdersApiSlice";
+import { handleToast } from "@/utils/handleToast";
+
+const getStatusBadge = (status) => {
+  const styles = {
+    draft: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+    pending:
+      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
+    confirmed:
+      "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
+    partial:
+      "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300",
+    received:
+      "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
+    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
+  };
+  const icons = {
+    draft: <LuClock className="size-4" />,
+    pending: <LuClock className="size-4" />,
+    confirmed: <LuCheck className="size-4" />,
+    partial: <LuClock className="size-4" />,
+    received: <LuCheck className="size-4" />,
+    cancelled: <LuX className="size-4" />,
+  };
+  return (
+    <span
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium capitalize ${styles[status] || styles.draft}`}
+    >
+      {icons[status]} {status}
+    </span>
+  );
+};
+
+const formatCurrency = (amount) => `৳${(amount || 0).toLocaleString()}`;
+const formatDate = (date) =>
+  date
+    ? new Date(date).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "---";
+
+export default function ViewPurchaseOrderPage() {
+  const { id } = useParams();
+  const router = useRouter();
+  const { data, isLoading, isError, refetch } =
+    useGetSinglePurchaseOrderQuery(id);
+  const [confirmPO, { isLoading: confirmLoading }] =
+    useConfirmPurchaseOrderMutation();
+  const [receiveItems, { isLoading: receiveLoading }] =
+    useReceivePurchaseOrderItemsMutation();
+
+  const [receiveQuantities, setReceiveQuantities] = useState({});
+
+  const po = data?.data;
+
+  // Initialize receive quantities when PO loads
+  useEffect(() => {
+    if (po?.items) {
+      const quantities = {};
+      po.items.forEach((item) => {
+        const remaining = item.orderedQuantity - item.receivedQuantity;
+        quantities[item._id] = remaining > 0 ? remaining : 0;
+      });
+      setReceiveQuantities(quantities);
+    }
+  }, [po]);
+
+  const handleConfirm = async () => {
+    const loadingToast = toast.loading("Confirming order...");
+    const result = await confirmPO(id);
+    handleToast({
+      result,
+      type: result?.data ? "success" : "error",
+      id: "confirm-po",
+      message: "Purchase order confirmed!",
+    });
+    toast.dismiss(loadingToast);
+    if (result?.data) refetch();
+  };
+
+  const handleReceive = async () => {
+    const itemsToReceive = Object.entries(receiveQuantities)
+      .filter(([_, qty]) => qty > 0)
+      .map(([itemId, receivedQuantity]) => ({
+        itemId,
+        receivedQuantity: parseInt(receivedQuantity),
+      }));
+
+    if (itemsToReceive.length === 0) {
+      toast.error("No items to receive");
+      return;
+    }
+
+    const loadingToast = toast.loading("Receiving items...");
+    const result = await receiveItems({ id, data: { items: itemsToReceive } });
+    handleToast({
+      result,
+      type: result?.data ? "success" : "error",
+      id: "receive-po",
+      message: "Items received! Stock updated.",
+    });
+    toast.dismiss(loadingToast);
+    if (result?.data) refetch();
+  };
+
+  const updateReceiveQty = (itemId, value) => {
+    setReceiveQuantities((prev) => ({
+      ...prev,
+      [itemId]: Math.max(0, parseInt(value) || 0),
+    }));
+  };
+
+  const canConfirm = po?.status === "draft";
+  const canReceive = ["pending", "confirmed", "partial"].includes(po?.status);
+  const hasItemsToReceive = po?.items?.some(
+    (item) => item.receivedQuantity < item.orderedQuantity,
+  );
+
+  if (isLoading) return <PageSkeleton />;
+  if (isError || !po) return <ErrorBoundaryFetcher />;
+
+  return (
+    <div className="bg-white dark:bg-[#010611] minBody p-5 rounded-xl space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/inventory/purchase-orders"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <LuArrowLeft className="size-5" />
+          </Link>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                {po.poNumber}
+              </h1>
+              {getStatusBadge(po.status)}
+            </div>
+            <p className="text-sm text-gray-500">
+              Created on {formatDate(po.createdAt)}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {canConfirm && (
+            <Button onClick={handleConfirm} disabled={confirmLoading}>
+              <LuCheck className="size-4" />{" "}
+              {confirmLoading ? "Confirming..." : "Confirm Order"}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Order Info Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 flex items-start gap-3">
+              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center">
+                <LuTruck className="size-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase">Supplier</p>
+                <p className="font-medium text-gray-800 dark:text-white">
+                  {po.supplier?.name || "---"}
+                </p>
+                {po.supplier?.email && (
+                  <p className="text-xs text-gray-500">{po.supplier.email}</p>
+                )}
+              </div>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 flex items-start gap-3">
+              <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/50 rounded-lg flex items-center justify-center">
+                <LuWarehouse className="size-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase">Warehouse</p>
+                <p className="font-medium text-gray-800 dark:text-white">
+                  {po.warehouse?.name || "---"}
+                </p>
+              </div>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 flex items-start gap-3">
+              <div className="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center">
+                <LuCalendar className="size-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase">
+                  Expected Delivery
+                </p>
+                <p className="font-medium text-gray-800 dark:text-white">
+                  {formatDate(po.expectedDelivery)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Items Table */}
+          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
+            <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
+              <LuPackage className="size-4" /> Order Items
+            </h2>
+
+            {/* Table Header */}
+            <div className="hidden md:grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 uppercase px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <div className="col-span-4">Product</div>
+              <div className="col-span-1 text-center">Ordered</div>
+              <div className="col-span-1 text-center">Received</div>
+              <div className="col-span-2 text-center">Unit Cost</div>
+              <div className="col-span-2 text-right">Total</div>
+              {canReceive && hasItemsToReceive && (
+                <div className="col-span-2 text-center">Receive Now</div>
+              )}
+            </div>
+
+            {/* Items */}
+            <div className="space-y-2">
+              {po.items?.map((item) => {
+                const remaining = item.orderedQuantity - item.receivedQuantity;
+                const itemTotal = item.unitCost * item.orderedQuantity;
+                const isFullyReceived =
+                  item.receivedQuantity >= item.orderedQuantity;
+
+                return (
+                  <div
+                    key={item._id}
+                    className={`grid grid-cols-12 gap-2 items-center p-3 rounded-lg border ${isFullyReceived ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}
+                  >
+                    <div className="col-span-12 md:col-span-4">
+                      <p className="font-medium text-gray-800 dark:text-white">
+                        {item.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {item.sku || "---"}
+                      </p>
+                    </div>
+                    <div className="col-span-4 md:col-span-1 text-center">
+                      <span className="text-gray-800 dark:text-white font-medium">
+                        {item.orderedQuantity}
+                      </span>
+                    </div>
+                    <div className="col-span-4 md:col-span-1 text-center">
+                      <span
+                        className={`font-medium ${isFullyReceived ? "text-green-600" : "text-amber-600"}`}
+                      >
+                        {item.receivedQuantity}
+                      </span>
+                    </div>
+                    <div className="col-span-4 md:col-span-2 text-center">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {formatCurrency(item.unitCost)}
+                      </span>
+                    </div>
+                    <div className="col-span-6 md:col-span-2 text-right">
+                      <span className="font-medium text-gray-800 dark:text-white">
+                        {formatCurrency(itemTotal)}
+                      </span>
+                    </div>
+                    {canReceive && hasItemsToReceive && (
+                      <div className="col-span-6 md:col-span-2 flex justify-center">
+                        {!isFullyReceived ? (
+                          <Input
+                            type="number"
+                            min="0"
+                            max={remaining}
+                            value={receiveQuantities[item._id] || 0}
+                            onValueChange={(val) =>
+                              updateReceiveQty(item._id, val)
+                            }
+                            className="w-20 text-center"
+                          />
+                        ) : (
+                          <span className="text-green-600 flex items-center gap-1 text-sm">
+                            <LuCheck className="size-4" /> Done
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Receive Button */}
+            {canReceive && hasItemsToReceive && (
+              <div className="pt-4 flex justify-end">
+                <Button onClick={handleReceive} disabled={receiveLoading}>
+                  <LuCheck className="size-4" />{" "}
+                  {receiveLoading
+                    ? "Receiving..."
+                    : "Receive Items & Update Stock"}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Notes */}
+          {po.notes && (
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-2">
+                Notes
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">{po.notes}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Summary Sidebar */}
+        <div className="space-y-6">
+          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4 sticky top-4">
+            <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+              Order Summary
+            </h2>
+
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Subtotal</span>
+                <span className="text-gray-800 dark:text-white">
+                  {formatCurrency(po.subtotal)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Discount</span>
+                <span className="text-red-500">
+                  -{formatCurrency(po.discount)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Tax</span>
+                <span className="text-gray-800 dark:text-white">
+                  +{formatCurrency(po.tax)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Shipping</span>
+                <span className="text-gray-800 dark:text-white">
+                  +{formatCurrency(po.shippingCost)}
+                </span>
+              </div>
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-800 dark:text-white">
+                    Total
+                  </span>
+                  <span className="text-xl font-bold text-primary">
+                    {formatCurrency(po.total)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Info */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
+              <h3 className="text-xs font-medium text-gray-500 uppercase">
+                Payment
+              </h3>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Terms</span>
+                <span className="text-gray-800 dark:text-white capitalize">
+                  {po.payment?.terms?.replace("_", " ") || "---"}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Status</span>
+                <span
+                  className={`capitalize ${po.payment?.status === "paid" ? "text-green-600" : "text-amber-600"}`}
+                >
+                  {po.payment?.status || "Pending"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
