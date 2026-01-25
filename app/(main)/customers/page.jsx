@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { toast } from "react-hot-toast";
-import Link from "next/link";
 import moment from "moment";
 import {
   LuEye,
@@ -16,6 +15,7 @@ import {
   LuPlus,
   LuSearch,
   LuRefreshCw,
+  LuSave,
 } from "react-icons/lu";
 
 import { useModal } from "@/lib/useModal";
@@ -30,6 +30,8 @@ import {
   useGetCustomerListQuery,
   useDeleteCustomerMutation,
   useUpdateCustomerStatusMutation,
+  useCreateCustomerMutation,
+  useUpdateCustomerMutation,
 } from "@/features/customers/customersApiSlice";
 import { handleToast } from "@/utils/handleToast";
 
@@ -40,18 +42,40 @@ const statusFilterOptions = [
   { value: "banned", label: "Banned" },
 ];
 
+const statusOptions = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "banned", label: "Banned" },
+];
+
 export default function CustomersPage() {
   const [deleteCustomer, { isLoading: deleteLoading }] =
     useDeleteCustomerMutation();
   const [updateStatus] = useUpdateCustomerStatusMutation();
+  const [createCustomer, { isLoading: createLoading }] =
+    useCreateCustomerMutation();
+  const [updateCustomer, { isLoading: updateLoading }] =
+    useUpdateCustomerMutation();
+
   const viewModal = useModal();
   const deleteModal = useModal();
+  const addModal = useModal();
+  const editModal = useModal();
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [filterData, setFilterData] = useState({ searchTerm: "", status: "" });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+  // Form state for add/edit
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    status: "active",
+  });
+  const [errors, setErrors] = useState({});
 
   const { data, isLoading, isError, refetch } = useGetCustomerListQuery({
     searchTerm: filterData.searchTerm,
@@ -99,6 +123,103 @@ export default function CustomersPage() {
   const clearSearch = () =>
     setFilterData((prev) => ({ ...prev, searchTerm: "" }));
 
+  // Form handlers
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      status: "active",
+    });
+    setErrors({});
+  };
+
+  const validateForm = (isEdit = false) => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (!formData.email.trim()) newErrors.email = "Email is required";
+    if (!isEdit && !formData.password.trim())
+      newErrors.password = "Password is required";
+    if (!isEdit && formData.password.length < 6)
+      newErrors.password = "Password must be at least 6 characters";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleAdd = () => {
+    resetForm();
+    addModal.open();
+  };
+
+  const handleEdit = (customer) => {
+    setSelectedItem(customer);
+    setFormData({
+      name: customer.name || "",
+      email: customer.email || "",
+      password: "",
+      status: customer.status || "active",
+    });
+    setErrors({});
+    editModal.open();
+  };
+
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm(false)) {
+      toast.error("Please fix the errors");
+      return;
+    }
+
+    const result = await createCustomer(formData);
+    handleToast({
+      result,
+      type: result?.data ? "success" : "error",
+      id: "create-customer",
+      message: "Customer created!",
+    });
+
+    if (result?.data) {
+      addModal.close();
+      resetForm();
+    }
+  };
+
+  const handleUpdateSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm(true)) {
+      toast.error("Please fix the errors");
+      return;
+    }
+
+    const payload = {
+      name: formData.name,
+      email: formData.email,
+      status: formData.status,
+    };
+
+    const result = await updateCustomer({
+      id: selectedItem._id,
+      data: payload,
+    });
+    handleToast({
+      result,
+      type: result?.data ? "success" : "error",
+      id: "update-customer",
+      message: "Customer updated!",
+    });
+
+    if (result?.data) {
+      editModal.close();
+      resetForm();
+      setSelectedItem(null);
+    }
+  };
+
   const columns = [
     {
       id: "name",
@@ -135,25 +256,11 @@ export default function CustomersPage() {
       ),
     },
     {
-      id: "orders",
-      header: "Orders",
-      cell: (_, row) => (
-        <div className="text-sm">
-          <p className="font-medium text-gray-800 dark:text-white">
-            {row.totalOrders || 0}
-          </p>
-          <p className="text-xs text-gray-500">
-            ৳{(row.totalSpent || 0).toFixed(2)}
-          </p>
-        </div>
-      ),
-    },
-    {
-      id: "since",
-      header: "Member Since",
+      id: "joinedAt",
+      header: "Joined At",
       cell: (_, row) => (
         <span className="text-sm text-gray-500">
-          {moment(row.customerSince || row.createdAt).format("DD MMM YYYY")}
+          {moment(row.createdAt).format("DD MMM YYYY")}
         </span>
       ),
     },
@@ -213,13 +320,15 @@ export default function CustomersPage() {
           >
             <LuEye className="size-4" />
           </button>
-          <Link
-            href={`/customers/edit/${row._id}`}
-            onClick={(e) => e.stopPropagation()}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEdit(row);
+            }}
             className="size-8 center text-amber-600 bg-amber-100/50 rounded dark:text-amber-300 dark:bg-amber-900/30"
           >
             <LuPencil className="size-4" />
-          </Link>
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -243,18 +352,14 @@ export default function CustomersPage() {
         <TableSkeleton columns={columns} rowCount={limit} />
       ) : (
         <>
-          {/* Row 1: Title and Add Button */}
           <div className="flex flex-col gap-4">
             <div className="flex sm:flex-row flex-col sm:items-center justify-between gap-4">
               <h1 className="text-xl font-medium">Customers</h1>
-              <Link href="/customers/add">
-                <Button className="whitespace-nowrap">
-                  <LuPlus className="size-4" /> Add Customer
-                </Button>
-              </Link>
+              <Button onClick={handleAdd} className="whitespace-nowrap">
+                <LuPlus className="size-4" /> Add Customer
+              </Button>
             </div>
 
-            {/* Row 2: Search, Filters, and Refresh */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <Input
                 placeholder="Search customers..."
@@ -313,6 +418,7 @@ export default function CustomersPage() {
         </>
       )}
 
+      {/* View Modal */}
       <Modal
         open={viewModal.isOpen}
         onClose={viewModal.close}
@@ -359,36 +465,10 @@ export default function CustomersPage() {
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase">
-                  Total Orders
+                  Joined At
                 </label>
                 <p className="text-gray-800 dark:text-white">
-                  {selectedItem.totalOrders || 0}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">
-                  Total Spent
-                </label>
-                <p className="text-gray-800 dark:text-white">
-                  ৳{(selectedItem.totalSpent || 0).toFixed(2)}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">
-                  Loyalty Points
-                </label>
-                <p className="text-gray-800 dark:text-white">
-                  {selectedItem.loyaltyPoints || 0}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">
-                  Member Since
-                </label>
-                <p className="text-gray-800 dark:text-white">
-                  {moment(
-                    selectedItem.customerSince || selectedItem.createdAt,
-                  ).format("DD MMM YYYY")}
+                  {moment(selectedItem.createdAt).format("DD MMM YYYY")}
                 </p>
               </div>
             </div>
@@ -396,14 +476,20 @@ export default function CustomersPage() {
               <Button variant="outline" onClick={viewModal.close}>
                 Close
               </Button>
-              <Link href={`/customers/edit/${selectedItem._id}`}>
-                <Button onClick={viewModal.close}>Edit</Button>
-              </Link>
+              <Button
+                onClick={() => {
+                  viewModal.close();
+                  handleEdit(selectedItem);
+                }}
+              >
+                Edit
+              </Button>
             </div>
           </div>
         )}
       </Modal>
 
+      {/* Delete Modal */}
       <Modal
         open={deleteModal.isOpen}
         onClose={deleteModal.close}
@@ -434,6 +520,125 @@ export default function CustomersPage() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Add Customer Modal */}
+      <Modal
+        open={addModal.isOpen}
+        onClose={() => {
+          addModal.close();
+          resetForm();
+        }}
+        title="Add Customer"
+        size="medium"
+      >
+        <form onSubmit={handleCreateSubmit} className="space-y-4">
+          <Input
+            label="Name"
+            placeholder="John Doe"
+            value={formData.name}
+            onValueChange={(val) => handleInputChange("name", val)}
+            error={errors.name}
+            requiredSign={true}
+          />
+          <Input
+            label="Email"
+            type="email"
+            placeholder="john@example.com"
+            value={formData.email}
+            onValueChange={(val) => handleInputChange("email", val)}
+            error={errors.email}
+            requiredSign={true}
+          />
+          <Input
+            label="Password"
+            type="password"
+            placeholder="••••••••"
+            value={formData.password}
+            onValueChange={(val) => handleInputChange("password", val)}
+            error={errors.password}
+            requiredSign={true}
+          />
+          <Select
+            label="Status"
+            options={statusOptions}
+            value={formData.status}
+            onValueChange={(val) => handleInputChange("status", val)}
+          />
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                addModal.close();
+                resetForm();
+              }}
+              disabled={createLoading}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={createLoading}>
+              <LuSave className="size-4" />
+              {createLoading ? "Creating..." : "Create Customer"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Customer Modal */}
+      <Modal
+        open={editModal.isOpen}
+        onClose={() => {
+          editModal.close();
+          resetForm();
+          setSelectedItem(null);
+        }}
+        title="Edit Customer"
+        size="medium"
+      >
+        <form onSubmit={handleUpdateSubmit} className="space-y-4">
+          <Input
+            label="Name"
+            placeholder="John Doe"
+            value={formData.name}
+            onValueChange={(val) => handleInputChange("name", val)}
+            error={errors.name}
+            requiredSign={true}
+          />
+          <Input
+            label="Email"
+            type="email"
+            placeholder="john@example.com"
+            value={formData.email}
+            onValueChange={(val) => handleInputChange("email", val)}
+            error={errors.email}
+            requiredSign={true}
+          />
+          <Select
+            label="Status"
+            options={statusOptions}
+            value={formData.status}
+            onValueChange={(val) => handleInputChange("status", val)}
+          />
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                editModal.close();
+                resetForm();
+                setSelectedItem(null);
+              }}
+              disabled={updateLoading}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={updateLoading}>
+              <LuSave className="size-4" />
+              {updateLoading ? "Updating..." : "Update Customer"}
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

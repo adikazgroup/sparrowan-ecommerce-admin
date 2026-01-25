@@ -188,10 +188,10 @@ export default function TaxRuleForm({ selectedTaxRule, isEdit, onClose }) {
       rate: Number(formData.rate),
       effectiveFrom: formData.effectiveFrom
         ? format(formData.effectiveFrom, "yyyy-MM-dd")
-        : null,
+        : "",
       effectiveTo: formData.effectiveTo
         ? format(formData.effectiveTo, "yyyy-MM-dd")
-        : null,
+        : "",
     };
 
     const loadingToast = toast.loading(

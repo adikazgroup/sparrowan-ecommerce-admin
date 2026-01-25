@@ -143,9 +143,9 @@ export default function AddSubCategoryPage() {
       departmentId: formData.departmentId,
       parent: formData.parent,
       level: 1,
-      description: formData.description || null,
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      description: formData.description,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
     };
 

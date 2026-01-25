@@ -14,6 +14,7 @@ import {
   useGetSingleDepartmentQuery,
   useUpdateDepartmentMutation,
 } from "@/features/departments/departmentsApiSlice";
+import { useGetTaxCategoriesIdNameQuery } from "@/features/taxCategories/taxCategoriesApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
 
@@ -40,11 +41,21 @@ export default function EditDepartmentPage() {
   } = useGetSingleDepartmentQuery(departmentId);
   const [updateDepartment, { isLoading: isUpdating }] =
     useUpdateDepartmentMutation();
+  const { data: taxCategoriesData } = useGetTaxCategoriesIdNameQuery();
+
+  const taxCategoryOptions = [
+    { value: "", label: "No Tax Category" },
+    ...(taxCategoriesData?.data?.map((t) => ({
+      value: t.value,
+      label: t.label,
+    })) || []),
+  ];
 
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
     description: "",
+    taxCategory: "",
     metaTitle: "",
     metaDescription: "",
     status: "active",
@@ -63,6 +74,7 @@ export default function EditDepartmentPage() {
         name: dept.name || "",
         slug: dept.slug || "",
         description: dept.description || "",
+        taxCategory: dept.taxCategory || "",
         metaTitle: dept.metaTitle || "",
         metaDescription: dept.metaDescription || "",
         status: dept.status || "active",
@@ -166,9 +178,10 @@ export default function EditDepartmentPage() {
     const deptPayload = {
       name: formData.name,
       slug: formData.slug,
-      description: formData.description || null,
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      description: formData.description,
+      taxCategory: formData.taxCategory,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
     };
 
@@ -272,6 +285,19 @@ export default function EditDepartmentPage() {
                 value={formData.description}
                 onValueChange={(val) => handleInputChange("description", val)}
                 rows={3}
+              />
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                Tax Settings
+              </h2>
+              <Select
+                label="Tax Category"
+                options={taxCategoryOptions}
+                value={formData.taxCategory}
+                onValueChange={(val) => handleInputChange("taxCategory", val)}
+                placeholder="Select Tax Category (Optional)"
               />
             </div>
 

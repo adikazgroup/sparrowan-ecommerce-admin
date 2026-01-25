@@ -174,9 +174,9 @@ export default function EditSubCategoryPage() {
       slug: formData.slug,
       departmentId: formData.departmentId,
       parent: formData.parent,
-      description: formData.description || null,
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      description: formData.description,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
     };
 

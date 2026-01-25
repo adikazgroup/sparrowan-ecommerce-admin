@@ -148,9 +148,9 @@ export default function AddBrandPage() {
     const brandData = {
       name: formData.name,
       slug: formData.slug,
-      description: formData.description || null,
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      description: formData.description,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
     };
 

@@ -133,10 +133,10 @@ export default function AddDepartmentPage() {
     const departmentData = {
       name: formData.name,
       slug: formData.slug,
-      description: formData.description || null,
-      taxCategory: formData.taxCategory || null,
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      description: formData.description,
+      taxCategory: formData.taxCategory,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
     };
 

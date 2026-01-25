@@ -148,9 +148,9 @@ export default function AddCategoryPage() {
       slug: formData.slug,
       departmentId: formData.departmentId,
       level: 0, // Root category
-      description: formData.description || null,
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      description: formData.description,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
     };
 

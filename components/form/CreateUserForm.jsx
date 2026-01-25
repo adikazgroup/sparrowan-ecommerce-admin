@@ -13,7 +13,7 @@ import { userRoleOptions, userStatusOptions } from "@/utils/DataHelper";
 export default function CreateUserForm({ onClose }) {
   const [formData, setFormData] = useState({
     name: "",
-    role: "user",
+    role: "staff",
     email: "",
     password: "",
     status: "active",

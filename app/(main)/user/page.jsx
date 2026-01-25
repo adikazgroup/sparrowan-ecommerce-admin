@@ -167,29 +167,10 @@ export default function UserPage() {
         </div>
       ),
     },
-    {
-      id: "isEmailVerified",
-      header: "Email Verified",
-      cell: (_, row) => (
-        <span
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-            row?.isEmailVerified
-              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
-              : "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300"
-          }`}
-        >
-          {row?.isEmailVerified ? (
-            <LuCheck className="size-3.5" />
-          ) : (
-            <LuX className="size-3.5" />
-          )}
-          {row?.isEmailVerified ? "Verified" : "Not Verified"}
-        </span>
-      ),
-    },
+
     {
       id: "createdAt",
-      header: "Created",
+      header: "Joined At",
       cell: (_, row) => (
         <span className="text-sm text-gray-500 dark:text-gray-400">
           {row.createdAt

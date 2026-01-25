@@ -9,11 +9,7 @@ import { Button } from "../ui/button/Button";
 import React, { useEffect, useState } from "react";
 import { useUpdateUserMutation } from "@/features/user/userApiSlice";
 import { handleToast } from "@/utils/handleToast";
-import {
-  userRoleOptions,
-  userStatusOptions,
-  emailVerifiedOptions,
-} from "@/utils/DataHelper";
+import { userRoleOptions, userStatusOptions } from "@/utils/DataHelper";
 
 export default function EditUserForm({ selectedUser, onClose }) {
   const [editFormData, setEditFormData] = useState({
@@ -21,7 +17,6 @@ export default function EditUserForm({ selectedUser, onClose }) {
     email: "",
     role: "",
     status: "",
-    isEmailVerified: false,
   });
 
   const [editErrors, setEditErrors] = useState({});
@@ -34,7 +29,6 @@ export default function EditUserForm({ selectedUser, onClose }) {
         email: selectedUser.email || "",
         role: selectedUser.role || "",
         status: selectedUser.status || "",
-        isEmailVerified: selectedUser.isEmailVerified ?? false,
       });
     }
   }, [selectedUser]);
@@ -45,7 +39,6 @@ export default function EditUserForm({ selectedUser, onClose }) {
       email: "",
       role: "",
       status: "",
-      isEmailVerified: false,
     });
     setEditErrors({});
   };
@@ -183,17 +176,6 @@ export default function EditUserForm({ selectedUser, onClose }) {
           fullWidth
           className="h-12 dark:border-[#475569]"
           error={editErrors.status}
-        />
-
-        <Select
-          label="Email Verified"
-          options={emailVerifiedOptions}
-          value={editFormData.isEmailVerified}
-          onValueChange={(value) =>
-            handleEditInputChange("isEmailVerified", value)
-          }
-          fullWidth
-          className="h-12 dark:border-[#475569]"
         />
       </div>
 

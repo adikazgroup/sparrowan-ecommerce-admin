@@ -231,22 +231,17 @@ export const menuItems = [
   },
 ];
 
-// User Role Options
+// User Role Options (must match server USER_ROLE)
 export const userRoleOptions = [
-  { value: "user", label: "User" },
   { value: "admin", label: "Admin" },
+  { value: "manager", label: "Manager" },
+  { value: "staff", label: "Staff" },
 ];
 
 // User Status Options
 export const userStatusOptions = [
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },
-];
-
-// Email Verified Options
-export const emailVerifiedOptions = [
-  { value: true, label: "Verified" },
-  { value: false, label: "Not Verified" },
 ];
 
 // Attribute Type Options

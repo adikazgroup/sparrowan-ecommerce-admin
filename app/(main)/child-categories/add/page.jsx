@@ -139,9 +139,9 @@ export default function AddChildCategoryPage() {
       departmentId: formData.departmentId,
       parent: formData.parent,
       level: 2,
-      description: formData.description || null,
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      description: formData.description,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
     };
 
