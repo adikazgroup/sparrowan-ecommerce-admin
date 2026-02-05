@@ -8,8 +8,20 @@ import { Button } from "../ui/button/Button";
 import { Select } from "../ui/select/Select";
 import { useCreateUserMutation } from "@/features/user/userApiSlice";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 import { userRoleOptions, userStatusOptions } from "@/utils/DataHelper";
 
+/**
+ * CreateUserForm Component
+ *
+ * Professional form for creating new users with:
+ * - Real-time validation
+ * - Data sanitization before submission
+ * - Loading states and error handling
+ *
+ * @param {Object} props
+ * @param {Function} props.onClose - Callback to close the form modal
+ */
 export default function CreateUserForm({ onClose }) {
   const [formData, setFormData] = useState({
     name: "",
@@ -22,12 +34,16 @@ export default function CreateUserForm({ onClose }) {
   const [errors, setErrors] = useState({});
   const [createUser, { isLoading }] = useCreateUserMutation();
 
+  /**
+   * Handles input field changes
+   */
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
 
+    // Clear error for this field
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
@@ -36,15 +52,21 @@ export default function CreateUserForm({ onClose }) {
     }
   };
 
+  /**
+   * Validates the entire form
+   * @returns {boolean} - True if form is valid
+   */
   const validateForm = () => {
     const newErrors = {};
     let isValid = true;
 
+    // Name validation
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
       isValid = false;
     }
 
+    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
       isValid = false;
@@ -55,6 +77,7 @@ export default function CreateUserForm({ onClose }) {
       isValid = false;
     }
 
+    // Password validation
     if (!formData.password.trim()) {
       newErrors.password = "Password is required";
       isValid = false;
@@ -63,6 +86,7 @@ export default function CreateUserForm({ onClose }) {
       isValid = false;
     }
 
+    // Role validation
     if (!formData.role) {
       newErrors.role = "Role is required";
       isValid = false;
@@ -72,6 +96,9 @@ export default function CreateUserForm({ onClose }) {
     return isValid;
   };
 
+  /**
+   * Handles form submission
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -82,19 +109,32 @@ export default function CreateUserForm({ onClose }) {
 
     const loadingToast = toast.loading("Creating user...");
 
-    const result = await createUser(formData);
+    try {
+      // Clean payload to remove empty/null/undefined values
+      const cleanedData = cleanPayload(formData);
 
-    handleToast({
-      result,
-      type: result?.data ? "success" : "error",
-      id: "create-user",
-      message: "User created successfully!",
-    });
+      // Convert to FormData if image is present
+      const payload = cleanedData.profileImage
+        ? toFormData(cleanedData)
+        : cleanedData;
 
-    toast.dismiss(loadingToast);
+      const result = await createUser(payload);
 
-    if (result?.data) {
-      onClose();
+      handleToast({
+        result,
+        type: result?.data ? "success" : "error",
+        id: "create-user",
+        message: "User created successfully!",
+      });
+
+      toast.dismiss(loadingToast);
+
+      if (result?.data) {
+        onClose();
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Failed to create user. Please try again.");
     }
   };
 
@@ -102,6 +142,7 @@ export default function CreateUserForm({ onClose }) {
     <div className="">
       <div className="max-w-4xl mx-auto">
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Form Fields Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
               label="Full Name"
@@ -166,17 +207,22 @@ export default function CreateUserForm({ onClose }) {
             </div>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onClose}>
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
             <Button
               type="submit"
               loading={isLoading}
-              endIcon={<Icon icon="lucide:arrow-right" className="size-4" />}
+              endIcon={<Icon icon="lucide:user-plus" className="size-4" />}
             >
-              Create User
+              {isLoading ? "Creating..." : "Create User"}
             </Button>
           </div>
         </form>

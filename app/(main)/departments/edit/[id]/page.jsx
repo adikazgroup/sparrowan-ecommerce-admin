@@ -17,6 +17,7 @@ import {
 import { useGetTaxCategoriesIdNameQuery } from "@/features/taxCategories/taxCategoriesApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -175,7 +176,7 @@ export default function EditDepartmentPage() {
       return;
     }
 
-    const deptPayload = {
+    const deptPayload = cleanPayload({
       name: formData.name,
       slug: formData.slug,
       description: formData.description,
@@ -183,7 +184,16 @@ export default function EditDepartmentPage() {
       metaTitle: formData.metaTitle,
       metaDescription: formData.metaDescription,
       status: formData.status,
-    };
+    });
+
+    // Handle image: new upload, keep existing, or delete
+    if (formData.image?.file) {
+      // New upload - file sent via FormData
+    } else if (existingImage) {
+      deptPayload.image = existingImage;
+    } else {
+      deptPayload.image = { url: "", publicId: "" };
+    }
 
     const payload = { data: JSON.stringify(deptPayload) };
     if (formData.image?.file) payload.image = formData.image.file;

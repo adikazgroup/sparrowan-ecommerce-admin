@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useCreateBrandMutation } from "@/features/brands/brandsApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -145,14 +146,14 @@ export default function AddBrandPage() {
       return;
     }
 
-    const brandData = {
+    const brandData = cleanPayload({
       name: formData.name,
       slug: formData.slug,
       description: formData.description,
       metaTitle: formData.metaTitle,
       metaDescription: formData.metaDescription,
       status: formData.status,
-    };
+    });
 
     const payload = { data: JSON.stringify(brandData) };
     if (formData.logo?.file) payload.logo = formData.logo.file;

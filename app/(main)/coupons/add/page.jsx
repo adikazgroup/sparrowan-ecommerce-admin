@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/select/Select";
 import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useCreateCouponMutation } from "@/features/coupons/couponsApiSlice";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -104,10 +105,10 @@ export default function AddCouponPage() {
       return;
     }
 
-    const couponData = {
+    const couponData = cleanPayload({
       name: formData.name,
       code: formData.code.toUpperCase(),
-      description: formData.description || undefined,
+      description: formData.description,
       type: formData.type,
       discountValue: Number(formData.discountValue),
       scope: formData.scope,
@@ -117,10 +118,9 @@ export default function AddCouponPage() {
       usageLimit: formData.usageLimit ? Number(formData.usageLimit) : null,
       startDate: formData.startDate,
       endDate: formData.endDate,
-      visibility: formData.visibility,
       isPublic: formData.isPublic,
       status: formData.status,
-    };
+    });
 
     const loadingToast = toast.loading("Creating coupon...");
     const result = await createCoupon(couponData);

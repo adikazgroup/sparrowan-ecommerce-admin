@@ -27,14 +27,7 @@ import { useGetWarehousesIdNameQuery } from "@/features/inventory/warehousesApiS
 import { useGetProductsIdNameQuery } from "@/features/products/productsApiSlice";
 import { useGetVariantsByProductQuery } from "@/features/products/productVariantsApiSlice";
 import { handleToast } from "@/utils/handleToast";
-
-const paymentTermsOptions = [
-  { value: "cod", label: "Cash on Delivery" },
-  { value: "advance", label: "Advance Payment" },
-  { value: "net_7", label: "Net 7 Days" },
-  { value: "net_15", label: "Net 15 Days" },
-  { value: "net_30", label: "Net 30 Days" },
-];
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const createEmptyItem = () => ({
   id: Date.now(),
@@ -70,10 +63,7 @@ export default function EditPurchaseOrderPage() {
   const productOptions = productsData?.data || [];
 
   const [formData, setFormData] = useState({
-    supplier: "",
-    warehouse: "",
     expectedDelivery: "",
-    paymentTerms: "net_30",
     shippingCost: 0,
     notes: "",
   });
@@ -88,12 +78,9 @@ export default function EditPurchaseOrderPage() {
   useEffect(() => {
     if (po && productOptions.length > 0 && !initialized) {
       setFormData({
-        supplier: po.supplier?._id || "",
-        warehouse: po.warehouse?._id || "",
         expectedDelivery: po.expectedDelivery
           ? new Date(po.expectedDelivery).toISOString().split("T")[0]
           : "",
-        paymentTerms: po.payment?.terms || "net_30",
         shippingCost: po.shippingCost || 0,
         notes: po.notes || "",
       });
@@ -196,8 +183,6 @@ export default function EditPurchaseOrderPage() {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.supplier) newErrors.supplier = "Supplier is required";
-    if (!formData.warehouse) newErrors.warehouse = "Warehouse is required";
 
     const validItems = items.filter((i) => i.product);
     if (validItems.length === 0) {
@@ -227,12 +212,9 @@ export default function EditPurchaseOrderPage() {
 
     const validItems = items.filter((i) => i.product);
     const payload = {
-      supplier: formData.supplier,
-      warehouse: formData.warehouse,
       expectedDelivery: formData.expectedDelivery || undefined,
       shippingCost: parseFloat(formData.shippingCost) || 0,
       notes: formData.notes || undefined,
-      payment: { terms: formData.paymentTerms },
       items: validItems.map((item) => ({
         product: item.product,
         variant: item.variant || undefined,
@@ -245,15 +227,16 @@ export default function EditPurchaseOrderPage() {
       })),
     };
 
-    const loadingToast = toast.loading("Updating purchase order...");
-    const result = await updatePO({ id, data: payload });
+    // Clean payload to remove empty/null/undefined values
+    const cleanedPayload = cleanPayload(payload);
+
+    const result = await updatePO({ id, data: cleanedPayload });
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "update-po",
       message: "Purchase order updated!",
     });
-    toast.dismiss(loadingToast);
     if (result?.data) router.push("/inventory/purchase-orders");
   };
 
@@ -307,34 +290,22 @@ export default function EditPurchaseOrderPage() {
                 Order Details
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select
-                  label="Supplier"
-                  options={[
-                    { value: "", label: "Select Supplier" },
-                    ...supplierOptions.map((s) => ({
-                      value: s.value,
-                      label: s.label,
-                    })),
-                  ]}
-                  value={formData.supplier}
-                  onValueChange={(val) => handleInputChange("supplier", val)}
-                  error={errors.supplier}
-                  requiredSign={true}
-                />
-                <Select
-                  label="Warehouse"
-                  options={[
-                    { value: "", label: "Select Warehouse" },
-                    ...warehouseOptions.map((w) => ({
-                      value: w.value,
-                      label: w.label,
-                    })),
-                  ]}
-                  value={formData.warehouse}
-                  onValueChange={(val) => handleInputChange("warehouse", val)}
-                  error={errors.warehouse}
-                  requiredSign={true}
-                />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Supplier
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-white p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    {po.supplier?.name || "N/A"}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Warehouse
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-white p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    {po.warehouse?.name || "N/A"}
+                  </p>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
@@ -343,14 +314,6 @@ export default function EditPurchaseOrderPage() {
                   value={formData.expectedDelivery}
                   onValueChange={(val) =>
                     handleInputChange("expectedDelivery", val)
-                  }
-                />
-                <Select
-                  label="Payment Terms"
-                  options={paymentTermsOptions}
-                  value={formData.paymentTerms}
-                  onValueChange={(val) =>
-                    handleInputChange("paymentTerms", val)
                   }
                 />
               </div>
@@ -455,7 +418,7 @@ export default function EditPurchaseOrderPage() {
                 </div>
               </div>
               <div className="pt-4 space-y-2">
-                <Button type="submit" disabled={isLoading} className="w-full">
+                <Button type="submit" loading={isLoading} className="w-full">
                   <LuSave className="size-4" />{" "}
                   {isLoading ? "Updating..." : "Update Order"}
                 </Button>

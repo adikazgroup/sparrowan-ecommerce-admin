@@ -14,6 +14,7 @@ import {
 } from "@/features/categories/categoriesApiSlice";
 import { useGetDepartmentsIdNameQuery } from "@/features/departments/departmentsApiSlice";
 import generateFormData from "@/utils/generateFormData";
+import { cleanPayload } from "@/utils/cleanPayload";
 import { handleToast } from "@/utils/handleToast";
 
 const statusOptions = [
@@ -193,19 +194,37 @@ export default function CategoryForm({ selectedCategory, isEdit, onClose }) {
       return;
     }
 
-    const categoryData = {
+    // Image handling logic
+    let imagePayload = undefined;
+    let shouldRemoveImage = false;
+
+    if (formData.image?.file) {
+      if (existingImage) shouldRemoveImage = true;
+    } else if (existingImage && !imageRemoved) {
+      imagePayload = {
+        url: existingImage.url,
+        publicId: existingImage.publicId,
+      };
+    } else if (imageRemoved) {
+      shouldRemoveImage = true;
+    }
+
+    const categoryData = cleanPayload({
       name: formData.name,
       slug: formData.slug,
       departmentId: formData.departmentId,
-      description: formData.description || null,
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      description: formData.description,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
-      level: 0, // Root category
-    };
+      level: 0,
+      image: imagePayload,
+      removeImage: shouldRemoveImage || undefined,
+    });
 
     const payload = { data: JSON.stringify(categoryData) };
 
+    // Handle new image file upload
     if (formData.image?.file) {
       payload.image = formData.image.file;
     }
@@ -394,7 +413,13 @@ export default function CategoryForm({ selectedCategory, isEdit, onClose }) {
               loading={isLoading}
               endIcon={<Icon icon="lucide:check" className="size-4" />}
             >
-              {isEdit ? "Update" : "Create"} Category
+              {isLoading
+                ? isEdit
+                  ? "Updating..."
+                  : "Creating..."
+                : isEdit
+                  ? "Update Category"
+                  : "Create Category"}
             </Button>
           </div>
         </form>

@@ -15,12 +15,12 @@ import {
 import { Input } from "@/components/ui/input/Input";
 import { Button } from "@/components/ui/button/Button";
 import { Select } from "@/components/ui/select/Select";
-import { Textarea } from "@/components/ui/textarea/Textarea";
 import {
   useGetSingleShippingZoneQuery,
   useUpdateShippingZoneMutation,
 } from "@/features/shippingZones/shippingZonesApiSlice";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -44,7 +44,6 @@ export default function EditShippingZonePage() {
 
   const [formData, setFormData] = useState({
     name: "",
-    description: "",
     countries: ["Bangladesh"],
     cities: "",
     freeShippingEnabled: false,
@@ -69,7 +68,6 @@ export default function EditShippingZonePage() {
       const zone = zoneData.data;
       setFormData({
         name: zone.name || "",
-        description: zone.description || "",
         countries: zone.countries || ["Bangladesh"],
         cities: zone.cities?.join(", ") || "",
         freeShippingEnabled: zone.freeShippingEnabled || false,
@@ -188,29 +186,28 @@ export default function EditShippingZonePage() {
       .map((c) => c.trim())
       .filter((c) => c);
 
-    const zonePayload = {
+    const zonePayload = cleanPayload({
       name: formData.name,
-      description: formData.description || undefined,
       countries: formData.countries,
-      cities: citiesArray.length > 0 ? citiesArray : undefined,
+      cities: citiesArray.length > 0 ? citiesArray : [],
       freeShippingEnabled: formData.freeShippingEnabled,
       freeShippingThreshold:
         formData.freeShippingEnabled && formData.freeShippingThreshold
           ? Number(formData.freeShippingThreshold)
-          : undefined,
-      priority: Number(formData.priority) || 0,
+          : null,
+      priority: Number(formData.priority),
       status: formData.status,
       rates: formData.rates.map((r) => ({
         name: r.name,
         rateType: r.rateType,
-        flatRate: Number(r.flatRate) || 0,
+        flatRate: Number(r.flatRate),
         estimatedDeliveryDays: {
-          min: Number(r.estimatedDeliveryDays.min) || 1,
-          max: Number(r.estimatedDeliveryDays.max) || 3,
+          min: Number(r.estimatedDeliveryDays.min),
+          max: Number(r.estimatedDeliveryDays.max),
         },
         isDefault: r.isDefault,
       })),
-    };
+    });
 
     const loadingToast = toast.loading("Updating shipping zone...");
     const result = await updateZone({ id: zoneId, data: zonePayload });
@@ -290,13 +287,6 @@ export default function EditShippingZonePage() {
                 placeholder="Dhaka, Mirpur, Uttara, Dhanmondi..."
                 value={formData.cities}
                 onValueChange={(val) => handleInputChange("cities", val)}
-              />
-              <Textarea
-                label="Description"
-                placeholder="Describe the zone coverage..."
-                value={formData.description}
-                onValueChange={(val) => handleInputChange("description", val)}
-                rows={2}
               />
             </div>
 
@@ -482,9 +472,9 @@ export default function EditShippingZonePage() {
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" loading={isLoading}>
             <LuSave className="size-4" />
-            {isLoading ? "Updating..." : "Update Zone"}
+            Update Zone
           </Button>
         </div>
       </form>

@@ -11,9 +11,13 @@ import { Button } from "@/components/ui/button/Button";
 import { Select } from "@/components/ui/select/Select";
 import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useCreateBlogMutation } from "@/features/blogs/blogsApiSlice";
-import { useGetCategoriesIdNameQuery } from "@/features/categories/categoriesApiSlice";
+import {
+  useGetCategoriesIdNameQuery,
+  useGetChildrenByParentIdQuery,
+} from "@/features/categories/categoriesApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "draft", label: "Draft" },
@@ -30,13 +34,7 @@ const getFileExtension = (filename) => {
 export default function AddBlogPage() {
   const router = useRouter();
   const [createBlog, { isLoading }] = useCreateBlogMutation();
-  const { data: categoriesData } = useGetCategoriesIdNameQuery();
-
-  const categoryOptions =
-    categoriesData?.data?.map((cat) => ({
-      value: cat.value,
-      label: cat.label,
-    })) || [];
+  const { data: categoriesData } = useGetCategoriesIdNameQuery({ level: 0 });
 
   const [formData, setFormData] = useState({
     title: "",
@@ -51,6 +49,36 @@ export default function AddBlogPage() {
     status: "draft",
     featuredImage: null,
   });
+
+  // Fetch subcategories when category is selected
+  const { data: subCategoriesData } = useGetChildrenByParentIdQuery(
+    formData.category,
+    { skip: !formData.category },
+  );
+
+  // Fetch child categories when subcategory is selected
+  const { data: childCategoriesData } = useGetChildrenByParentIdQuery(
+    formData.subCategory,
+    { skip: !formData.subCategory },
+  );
+
+  const categoryOptions =
+    categoriesData?.data?.map((cat) => ({
+      value: cat.value,
+      label: cat.label,
+    })) || [];
+
+  const subCategoryOptions =
+    subCategoriesData?.data?.map((cat) => ({
+      value: cat._id,
+      label: cat.name,
+    })) || [];
+
+  const childCategoryOptions =
+    childCategoriesData?.data?.map((cat) => ({
+      value: cat._id,
+      label: cat.name,
+    })) || [];
 
   const [errors, setErrors] = useState({});
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
@@ -71,6 +99,26 @@ export default function AddBlogPage() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
+  };
+
+  const handleCategoryChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      category: value,
+      subCategory: "",
+      childCategory: "",
+    }));
+    if (errors.category) {
+      setErrors((prev) => ({ ...prev, category: "" }));
+    }
+  };
+
+  const handleSubCategoryChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      subCategory: value,
+      childCategory: "",
+    }));
   };
 
   const handleTitleChange = (value) => {
@@ -162,23 +210,23 @@ export default function AddBlogPage() {
       return;
     }
 
-    const blogData = {
+    const blogData = cleanPayload({
       title: formData.title,
       slug: formData.slug,
       content: formData.content,
       category: formData.category,
-      subCategory: formData.subCategory || null,
-      childCategory: formData.childCategory || null,
+      subCategory: formData.subCategory,
+      childCategory: formData.childCategory,
       tags: formData.tags
         ? formData.tags
             .split(",")
             .map((t) => t.trim())
             .filter(Boolean)
         : [],
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
-    };
+    });
 
     const payload = { data: JSON.stringify(blogData) };
     if (formData.featuredImage?.file)
@@ -273,7 +321,7 @@ export default function AddBlogPage() {
                   <Select
                     options={categoryOptions}
                     value={formData.category}
-                    onValueChange={(val) => handleInputChange("category", val)}
+                    onValueChange={handleCategoryChange}
                     placeholder="Select category"
                     className="w-full"
                   />
@@ -283,20 +331,38 @@ export default function AddBlogPage() {
                     </p>
                   )}
                 </div>
-                <Input
-                  label="Sub Category ID"
-                  placeholder="Optional"
-                  value={formData.subCategory}
-                  onValueChange={(val) => handleInputChange("subCategory", val)}
-                />
-                <Input
-                  label="Child Category ID"
-                  placeholder="Optional"
-                  value={formData.childCategory}
-                  onValueChange={(val) =>
-                    handleInputChange("childCategory", val)
-                  }
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Sub Category
+                  </label>
+                  <Select
+                    options={subCategoryOptions}
+                    value={formData.subCategory}
+                    onValueChange={handleSubCategoryChange}
+                    placeholder="Select subcategory"
+                    className="w-full"
+                    disabled={
+                      !formData.category || subCategoryOptions.length === 0
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Child Category
+                  </label>
+                  <Select
+                    options={childCategoryOptions}
+                    value={formData.childCategory}
+                    onValueChange={(val) =>
+                      handleInputChange("childCategory", val)
+                    }
+                    placeholder="Select child category"
+                    className="w-full"
+                    disabled={
+                      !formData.subCategory || childCategoryOptions.length === 0
+                    }
+                  />
+                </div>
               </div>
             </div>
 

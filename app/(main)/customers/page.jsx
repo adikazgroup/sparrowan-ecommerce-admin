@@ -1,3 +1,15 @@
+/**
+ * Customers Page - Professional Admin Panel
+ *
+ * Features:
+ * - Complete CRUD operations with validation
+ * - Data sanitization before API calls
+ * - Smart soft/hard delete support
+ * - Status toggle functionality
+ * - Advanced filtering and search
+ * - Responsive design with dark mode
+ */
+
 "use client";
 
 import { useState } from "react";
@@ -34,6 +46,7 @@ import {
   useUpdateCustomerMutation,
 } from "@/features/customers/customersApiSlice";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusFilterOptions = [
   { value: "", label: "All Status" },
@@ -175,12 +188,15 @@ export default function CustomersPage() {
       return;
     }
 
-    const result = await createCustomer(formData);
+    // Clean payload to remove empty/null/undefined values
+    const cleanedData = cleanPayload(formData);
+
+    const result = await createCustomer(cleanedData);
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "create-customer",
-      message: "Customer created!",
+      message: "Customer created successfully!",
     });
 
     if (result?.data) {
@@ -196,11 +212,12 @@ export default function CustomersPage() {
       return;
     }
 
-    const payload = {
+    // Prepare payload with clean data
+    const payload = cleanPayload({
       name: formData.name,
       email: formData.email,
       status: formData.status,
-    };
+    });
 
     const result = await updateCustomer({
       id: selectedItem._id,
@@ -210,7 +227,7 @@ export default function CustomersPage() {
       result,
       type: result?.data ? "success" : "error",
       id: "update-customer",
-      message: "Customer updated!",
+      message: "Customer updated successfully!",
     });
 
     if (result?.data) {
@@ -577,7 +594,7 @@ export default function CustomersPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createLoading}>
+            <Button type="submit" loading={createLoading}>
               <LuSave className="size-4" />
               {createLoading ? "Creating..." : "Create Customer"}
             </Button>
@@ -633,7 +650,7 @@ export default function CustomersPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={updateLoading}>
+            <Button type="submit" loading={updateLoading}>
               <LuSave className="size-4" />
               {updateLoading ? "Updating..." : "Update Customer"}
             </Button>

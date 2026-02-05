@@ -10,6 +10,7 @@ import {
   useCreateTaxCategoryMutation,
   useUpdateTaxCategoryMutation,
 } from "@/features/taxCategories/taxCategoriesApiSlice";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 export default function TaxCategoryForm({
   selectedTaxCategory,
@@ -70,15 +71,20 @@ export default function TaxCategoryForm({
 
     const loadingToast = toast.loading(isEdit ? "Updating..." : "Creating...");
     try {
+      const taxCategoryData = cleanPayload({
+        name: formData.name,
+        description: formData.description,
+      });
+
       if (isEdit) {
         await updateTaxCategory({
           id: selectedTaxCategory._id,
-          data: formData,
+          data: taxCategoryData,
         }).unwrap();
         toast.dismiss(loadingToast);
         toast.success("Tax Category updated successfully!");
       } else {
-        await createTaxCategory(formData).unwrap();
+        await createTaxCategory(taxCategoryData).unwrap();
         toast.dismiss(loadingToast);
         toast.success("Tax Category created successfully!");
       }
@@ -128,7 +134,7 @@ export default function TaxCategoryForm({
               loading={isLoading}
               endIcon={<Icon icon="lucide:check" className="size-4" />}
             >
-              {isEdit ? "Update" : "Create"} Tax Category
+              {isEdit ? "Update Tax Category" : "Create Tax Category"}
             </Button>
           </div>
         </form>

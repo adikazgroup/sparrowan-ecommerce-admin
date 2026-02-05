@@ -22,14 +22,7 @@ import { useGetWarehousesIdNameQuery } from "@/features/inventory/warehousesApiS
 import { useGetProductsIdNameQuery } from "@/features/products/productsApiSlice";
 import { useGetVariantsByProductQuery } from "@/features/products/productVariantsApiSlice";
 import { handleToast } from "@/utils/handleToast";
-
-const paymentTermsOptions = [
-  { value: "cod", label: "Cash on Delivery" },
-  { value: "advance", label: "Advance Payment" },
-  { value: "net_7", label: "Net 7 Days" },
-  { value: "net_15", label: "Net 15 Days" },
-  { value: "net_30", label: "Net 30 Days" },
-];
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const createEmptyItem = () => ({
   id: Date.now(),
@@ -61,7 +54,6 @@ export default function AddPurchaseOrderPage() {
     supplier: "",
     warehouse: "",
     expectedDelivery: "",
-    paymentTerms: "net_30",
     shippingCost: 0,
     notes: "",
   });
@@ -187,7 +179,6 @@ export default function AddPurchaseOrderPage() {
       expectedDelivery: formData.expectedDelivery || undefined,
       shippingCost: parseFloat(formData.shippingCost) || 0,
       notes: formData.notes || undefined,
-      payment: { terms: formData.paymentTerms },
       items: validItems.map((item) => ({
         product: item.product,
         variant: item.variant || undefined,
@@ -200,15 +191,16 @@ export default function AddPurchaseOrderPage() {
       })),
     };
 
-    const loadingToast = toast.loading("Creating purchase order...");
-    const result = await createPO(payload);
+    // Clean payload to remove empty/null/undefined values
+    const cleanedPayload = cleanPayload(payload);
+
+    const result = await createPO(cleanedPayload);
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "create-po",
       message: "Purchase order created!",
     });
-    toast.dismiss(loadingToast);
     if (result?.data) router.push("/inventory/purchase-orders");
   };
 
@@ -276,14 +268,6 @@ export default function AddPurchaseOrderPage() {
                   value={formData.expectedDelivery}
                   onValueChange={(val) =>
                     handleInputChange("expectedDelivery", val)
-                  }
-                />
-                <Select
-                  label="Payment Terms"
-                  options={paymentTermsOptions}
-                  value={formData.paymentTerms}
-                  onValueChange={(val) =>
-                    handleInputChange("paymentTerms", val)
                   }
                 />
               </div>
@@ -388,7 +372,7 @@ export default function AddPurchaseOrderPage() {
                 </div>
               </div>
               <div className="pt-4 space-y-2">
-                <Button type="submit" disabled={isLoading} className="w-full">
+                <Button type="submit" loading={isLoading} className="w-full">
                   <LuSave className="size-4" />{" "}
                   {isLoading ? "Creating..." : "Create Order"}
                 </Button>

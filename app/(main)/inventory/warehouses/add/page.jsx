@@ -12,15 +12,16 @@ import { Select } from "@/components/ui/select/Select";
 import { useCreateWarehouseMutation } from "@/features/inventory/warehousesApiSlice";
 import { handleToast } from "@/utils/handleToast";
 import { statusOptions } from "@/utils/DataHelper";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 export default function AddWarehousePage() {
   const router = useRouter();
   const [createWarehouse, { isLoading }] = useCreateWarehouseMutation();
 
+  // Form state matching server model (no isDefault field)
   const [formData, setFormData] = useState({
     name: "",
     code: "",
-    isDefault: false,
     status: "active",
     address: { street: "", city: "", state: "", country: "", postalCode: "" },
     contact: { name: "", phone: "", email: "" },
@@ -55,15 +56,16 @@ export default function AddWarehousePage() {
       return;
     }
 
-    const loadingToast = toast.loading("Creating warehouse...");
-    const result = await createWarehouse(formData);
+    // Clean payload to remove empty/null/undefined values
+    const cleanedData = cleanPayload(formData);
+
+    const result = await createWarehouse(cleanedData);
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "create-warehouse",
       message: "Warehouse created!",
     });
-    toast.dismiss(loadingToast);
     if (result?.data) router.push("/inventory/warehouses");
   };
 
@@ -203,24 +205,6 @@ export default function AddWarehousePage() {
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                 Settings
               </h2>
-              <label className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.isDefault}
-                  onChange={(e) =>
-                    handleInputChange("isDefault", e.target.checked)
-                  }
-                  className="w-4 h-4 text-primary"
-                />
-                <div>
-                  <p className="font-medium text-gray-800 dark:text-white text-sm">
-                    Default Warehouse
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Primary warehouse for orders
-                  </p>
-                </div>
-              </label>
               <Select
                 label="Status"
                 options={statusOptions}
@@ -237,7 +221,7 @@ export default function AddWarehousePage() {
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" loading={isLoading}>
             <LuSave className="size-4" />
             {isLoading ? "Creating..." : "Create Warehouse"}
           </Button>

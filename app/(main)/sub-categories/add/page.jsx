@@ -17,6 +17,7 @@ import {
 import { useGetDepartmentsIdNameQuery } from "@/features/departments/departmentsApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -137,7 +138,7 @@ export default function AddSubCategoryPage() {
       return;
     }
 
-    const catData = {
+    const catData = cleanPayload({
       name: formData.name,
       slug: formData.slug,
       departmentId: formData.departmentId,
@@ -147,7 +148,7 @@ export default function AddSubCategoryPage() {
       metaTitle: formData.metaTitle,
       metaDescription: formData.metaDescription,
       status: formData.status,
-    };
+    });
 
     const payload = { data: JSON.stringify(catData) };
     if (formData.image?.file) payload.image = formData.image.file;

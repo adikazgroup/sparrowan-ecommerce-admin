@@ -63,7 +63,6 @@ export default function WarehousesPage() {
 
   const confirmDelete = async () => {
     if (!selectedItem?._id) return;
-    const loadingToast = toast.loading("Deleting warehouse...");
     const result = await deleteWarehouse(selectedItem._id);
     handleToast({
       result,
@@ -71,7 +70,6 @@ export default function WarehousesPage() {
       id: "delete-warehouse",
       message: "Warehouse deleted!",
     });
-    toast.dismiss(loadingToast);
     if (result?.data) {
       deleteModal.close();
       setSelectedItem(null);
@@ -347,7 +345,7 @@ export default function WarehousesPage() {
             <Button
               variant="destructive"
               onClick={confirmDelete}
-              disabled={deleteLoading}
+              loading={deleteLoading}
               startIcon={<LuTrash2 className="size-4" />}
             >
               {deleteLoading ? "Deleting..." : "Delete"}

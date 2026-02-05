@@ -31,7 +31,14 @@ const purchaseOrdersApiSlice = apiSlice.injectEndpoints({
     }),
     confirmPurchaseOrder: builder.mutation({
       query: (id) => ({
-        url: `/admin/purchase-orders/${id}/confirm`,
+        url: `/admin/purchase-orders/${id}/approve`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["purchaseOrders"],
+    }),
+    submitPurchaseOrder: builder.mutation({
+      query: (id) => ({
+        url: `/admin/purchase-orders/${id}/submit`,
         method: "PATCH",
       }),
       invalidatesTags: ["purchaseOrders"],
@@ -39,7 +46,7 @@ const purchaseOrdersApiSlice = apiSlice.injectEndpoints({
     receivePurchaseOrderItems: builder.mutation({
       query: ({ id, data }) => ({
         url: `/admin/purchase-orders/${id}/receive`,
-        method: "POST",
+        method: "PATCH",
         body: data,
       }),
       invalidatesTags: ["purchaseOrders", "products", "productVariants"],
@@ -67,6 +74,7 @@ export const {
   useCreatePurchaseOrderMutation,
   useUpdatePurchaseOrderMutation,
   useConfirmPurchaseOrderMutation,
+  useSubmitPurchaseOrderMutation,
   useReceivePurchaseOrderItemsMutation,
   useCancelPurchaseOrderMutation,
   useDeletePurchaseOrderMutation,

@@ -35,10 +35,16 @@ const statusOptions = [
   { value: "", label: "All Status" },
   { value: "draft", label: "Draft" },
   { value: "pending", label: "Pending" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "partial", label: "Partial" },
+  { value: "approved", label: "Approved" },
   { value: "received", label: "Received" },
   { value: "cancelled", label: "Cancelled" },
+];
+
+const paymentStatusOptions = [
+  { value: "", label: "All Payment" },
+  { value: "pending", label: "Pending" },
+  { value: "partial", label: "Partial" },
+  { value: "paid", label: "Paid" },
 ];
 
 const getStatusBadge = (status) => {
@@ -46,10 +52,8 @@ const getStatusBadge = (status) => {
     draft: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
     pending:
       "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
-    confirmed:
+    approved:
       "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
-    partial:
-      "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300",
     received:
       "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
     cancelled: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
@@ -57,8 +61,7 @@ const getStatusBadge = (status) => {
   const icons = {
     draft: <LuClock className="size-3.5" />,
     pending: <LuClock className="size-3.5" />,
-    confirmed: <LuCheck className="size-3.5" />,
-    partial: <LuClock className="size-3.5" />,
+    approved: <LuCheck className="size-3.5" />,
     received: <LuCheck className="size-3.5" />,
     cancelled: <LuX className="size-3.5" />,
   };
@@ -90,7 +93,11 @@ export default function PurchaseOrdersPage() {
   const cancelModal = useModal();
 
   const [selectedItem, setSelectedItem] = useState(null);
-  const [filterData, setFilterData] = useState({ searchTerm: "", status: "" });
+  const [filterData, setFilterData] = useState({
+    searchTerm: "",
+    status: "",
+    paymentStatus: "",
+  });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
@@ -98,6 +105,7 @@ export default function PurchaseOrdersPage() {
   const { data, isLoading, isError, refetch } = useGetPurchaseOrdersQuery({
     searchTerm: filterData.searchTerm,
     status: filterData.status || undefined,
+    paymentStatus: filterData.paymentStatus || undefined,
     page,
     limit,
   });
@@ -116,7 +124,6 @@ export default function PurchaseOrdersPage() {
 
   const confirmDelete = async () => {
     if (!selectedItem?._id) return;
-    const loadingToast = toast.loading("Deleting...");
     const result = await deletePO(selectedItem._id);
     handleToast({
       result,
@@ -124,7 +131,6 @@ export default function PurchaseOrdersPage() {
       id: "delete-po",
       message: "Purchase order deleted!",
     });
-    toast.dismiss(loadingToast);
     if (result?.data) {
       deleteModal.close();
       setSelectedItem(null);
@@ -133,7 +139,6 @@ export default function PurchaseOrdersPage() {
 
   const confirmCancel = async () => {
     if (!selectedItem?._id) return;
-    const loadingToast = toast.loading("Cancelling...");
     const result = await cancelPO(selectedItem._id);
     handleToast({
       result,
@@ -141,7 +146,6 @@ export default function PurchaseOrdersPage() {
       id: "cancel-po",
       message: "Purchase order cancelled!",
     });
-    toast.dismiss(loadingToast);
     if (result?.data) {
       cancelModal.close();
       setSelectedItem(null);
@@ -308,6 +312,15 @@ export default function PurchaseOrdersPage() {
                 placeholder="Filter by Status"
                 className="w-full sm:w-40"
               />
+              <Select
+                options={paymentStatusOptions}
+                value={filterData.paymentStatus}
+                onValueChange={(value) =>
+                  setFilterData((prev) => ({ ...prev, paymentStatus: value }))
+                }
+                placeholder="Payment Status"
+                className="w-full sm:w-40"
+              />
               <button
                 onClick={handleRefresh}
                 disabled={isManualRefreshing}
@@ -357,7 +370,7 @@ export default function PurchaseOrdersPage() {
             <Button
               variant="destructive"
               onClick={confirmCancel}
-              disabled={cancelLoading}
+              loading={cancelLoading}
             >
               {cancelLoading ? "Cancelling..." : "Yes, Cancel"}
             </Button>
@@ -389,7 +402,7 @@ export default function PurchaseOrdersPage() {
             <Button
               variant="destructive"
               onClick={confirmDelete}
-              disabled={deleteLoading}
+              loading={deleteLoading}
               startIcon={<LuTrash2 className="size-4" />}
             >
               {deleteLoading ? "Deleting..." : "Delete"}

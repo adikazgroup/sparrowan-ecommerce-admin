@@ -17,6 +17,7 @@ import { handleToast } from "@/utils/handleToast";
 import { statusOptions } from "@/utils/DataHelper";
 import { PageSkeleton } from "@/components/skeleton/PageSkeleton";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 export default function EditWarehousePage() {
   const router = useRouter();
@@ -28,10 +29,10 @@ export default function EditWarehousePage() {
   } = useGetSingleWarehouseQuery(id);
   const [updateWarehouse, { isLoading }] = useUpdateWarehouseMutation();
 
+  // Form state matching server model (no isDefault field)
   const [formData, setFormData] = useState({
     name: "",
     code: "",
-    isDefault: false,
     status: "active",
     address: { street: "", city: "", state: "", country: "", postalCode: "" },
     contact: { name: "", phone: "", email: "" },
@@ -44,7 +45,6 @@ export default function EditWarehousePage() {
       setFormData({
         name: warehouse.name || "",
         code: warehouse.code || "",
-        isDefault: warehouse.isDefault || false,
         status: warehouse.status || "active",
         address: {
           street: warehouse.address?.street || "",
@@ -90,15 +90,16 @@ export default function EditWarehousePage() {
       return;
     }
 
-    const loadingToast = toast.loading("Updating warehouse...");
-    const result = await updateWarehouse({ id, data: formData });
+    // Clean payload to remove empty/null/undefined values
+    const cleanedData = cleanPayload(formData);
+
+    const result = await updateWarehouse({ id, data: cleanedData });
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "update-warehouse",
       message: "Warehouse updated!",
     });
-    toast.dismiss(loadingToast);
     if (result?.data) router.push("/inventory/warehouses");
   };
 
@@ -239,24 +240,6 @@ export default function EditWarehousePage() {
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                 Settings
               </h2>
-              <label className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.isDefault}
-                  onChange={(e) =>
-                    handleInputChange("isDefault", e.target.checked)
-                  }
-                  className="w-4 h-4 text-primary"
-                />
-                <div>
-                  <p className="font-medium text-gray-800 dark:text-white text-sm">
-                    Default Warehouse
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Primary warehouse for orders
-                  </p>
-                </div>
-              </label>
               <Select
                 label="Status"
                 options={statusOptions}
@@ -273,7 +256,7 @@ export default function EditWarehousePage() {
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" loading={isLoading}>
             <LuSave className="size-4" />
             {isLoading ? "Updating..." : "Update Warehouse"}
           </Button>

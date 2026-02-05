@@ -22,12 +22,13 @@ const SearchSelect = forwardRef(
       value,
       defaultValue,
       optionRenderer,
+      requiredSign = false,
       ...props
     },
-    ref
+    ref,
   ) => {
     const [selectedValue, setSelectedValue] = useState(
-      value || defaultValue || ""
+      value || defaultValue || "",
     );
     const dropdownRef = useRef(null);
     const optionsRef = useRef(null);
@@ -38,13 +39,13 @@ const SearchSelect = forwardRef(
 
     // Find the selected option's label to display
     const selectedOption = options.find(
-      (option) => option.value === selectedValue
+      (option) => option.value === selectedValue,
     );
     const displayValue = selectedOption ? selectedOption.label : "";
 
     // Filter options based on search query
     const filteredOptions = options.filter((option) =>
-      option.label.toLowerCase().includes(searchQuery.toLowerCase())
+      option.label.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
     useEffect(() => {
@@ -162,7 +163,7 @@ const SearchSelect = forwardRef(
           isSelected
             ? "bg-gray-100/80 dark:bg-accent text-primary dark:text-lime-400 justify-between"
             : "hover:bg-gray-100/80 dark:hover:bg-accent",
-          isHighlighted && "bg-gray-100 dark:bg-[#1E1E1E]"
+          isHighlighted && "bg-gray-100 dark:bg-[#1E1E1E]",
         )}
       >
         <span>{option.label}</span>
@@ -197,6 +198,7 @@ const SearchSelect = forwardRef(
         {label && (
           <label className="text-sm font-medium dark:font-[350] text-gray-700 dark:text-gray-100 ">
             {label}
+            {requiredSign && <span className="text-red-500 ml-1">*</span>}
           </label>
         )}
 
@@ -207,7 +209,7 @@ const SearchSelect = forwardRef(
               "flex h-10 w-full items-center justify-between rounded-md border border-input  px-3 py-2 text-sm ring-offset-background focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer dark:border-accent dark:font-[350]",
               startIcon && "pl-10",
               error && "border-red-500",
-              className
+              className,
             )}
             onClick={() => setIsOpen(!isOpen)}
             onKeyDown={handleKeyDown}
@@ -293,7 +295,7 @@ const SearchSelect = forwardRef(
                     {renderOption(
                       option,
                       selectedValue === option.value,
-                      highlightedIndex === index
+                      highlightedIndex === index,
                     )}
                   </div>
                 ))
@@ -311,7 +313,7 @@ const SearchSelect = forwardRef(
         {error && <p className="text-xs text-red-500">{error}</p>}
       </div>
     );
-  }
+  },
 );
 
 SearchSelect.displayName = "SearchSelect";

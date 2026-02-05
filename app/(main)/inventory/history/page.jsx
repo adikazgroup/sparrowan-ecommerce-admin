@@ -10,16 +10,28 @@ import {
   LuRotateCcw,
   LuTruck,
   LuTriangleAlert,
+  LuSearch,
+  LuX,
+  LuRefreshCw,
 } from "react-icons/lu";
 
 import { useModal } from "@/lib/useModal";
 import { Table } from "@/components/ui/table/Table";
 import { Button } from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal/Modal";
+import { Input } from "@/components/ui/input/Input";
+import { Select } from "@/components/ui/select/Select";
 import { TableSkeleton } from "@/components/skeleton/TableSkeleton";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
-import SimpleManageHeader from "@/components/section/SimpleManageHeader";
 import { useGetStockLogListQuery } from "@/features/inventory/stockLogsApiSlice";
+
+const typeOptions = [
+  { value: "", label: "All Types" },
+  { value: "purchase", label: "Purchase" },
+  { value: "sale", label: "Sale" },
+  { value: "return", label: "Return" },
+  { value: "adjustment", label: "Adjustment" },
+];
 
 const typeConfig = {
   purchase: {
@@ -94,6 +106,8 @@ export default function StockHistoryPage() {
     await refetch();
     setIsManualRefreshing(false);
   };
+
+  const clearSearch = () => setSearchTerm("");
 
   const columns = [
     {
@@ -196,21 +210,50 @@ export default function StockHistoryPage() {
         <TableSkeleton columns={columns} rowCount={limit} />
       ) : (
         <>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Stock History
-            </h1>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="icon"
+          <div className="flex flex-col gap-4">
+            <div className="flex sm:flex-row flex-col sm:items-center justify-between gap-4">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Stock History
+              </h1>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <Input
+                placeholder="Search by notes or reason..."
+                value={searchTerm}
+                onValueChange={setSearchTerm}
+                endIcon={
+                  searchTerm ? (
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+                    >
+                      <LuX className="h-4 w-4 text-gray-500" />
+                    </button>
+                  ) : (
+                    <LuSearch className="h-5 w-5" />
+                  )
+                }
+                className="w-full sm:w-64"
+              />
+              <Select
+                options={typeOptions}
+                value={statusFilter}
+                onValueChange={setStatusFilter}
+                placeholder="Filter by Type"
+                className="w-full sm:w-40"
+              />
+              <button
                 onClick={handleRefresh}
                 disabled={isManualRefreshing}
+                className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                title="Refresh data"
               >
-                <LuRotateCcw
-                  className={`size-4 ${isManualRefreshing ? "animate-spin" : ""}`}
+                <LuRefreshCw
+                  className={`size-4 text-gray-500 ${isManualRefreshing ? "animate-spin" : ""}`}
                 />
-              </Button>
+              </button>
             </div>
           </div>
           <Table

@@ -22,6 +22,7 @@ import {
 } from "@/features/banners/bannersApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -66,10 +67,28 @@ export default function EditBannerPage() {
   const [errors, setErrors] = useState({});
   const [isDragging, setIsDragging] = useState({ main: false, mobile: false });
 
+  const [existingImage, setExistingImage] = useState(null);
+  const [existingMobileImage, setExistingMobileImage] = useState(null);
+
   // Populate form when data loads
   useEffect(() => {
     if (bannerData?.data) {
       const banner = bannerData.data;
+
+      // Store existing images
+      if (banner.image) {
+        setExistingImage({
+          url: banner.image.url,
+          publicId: banner.image.publicId,
+        });
+      }
+      if (banner.mobileImage) {
+        setExistingMobileImage({
+          url: banner.mobileImage.url,
+          publicId: banner.mobileImage.publicId,
+        });
+      }
+
       setFormData({
         title: banner.title || "",
         link: banner.link || "",
@@ -81,14 +100,12 @@ export default function EditBannerPage() {
           ? {
               url: banner.image.url,
               publicId: banner.image.publicId,
-              isExisting: true,
             }
           : null,
         mobileImage: banner.mobileImage
           ? {
               url: banner.mobileImage.url,
               publicId: banner.mobileImage.publicId,
-              isExisting: true,
             }
           : null,
       });
@@ -163,6 +180,12 @@ export default function EditBannerPage() {
 
   const removeImage = (type) => {
     setFormData((prev) => ({ ...prev, [type]: null }));
+    // Also clear the existing image state so deletion signal is sent
+    if (type === "image") {
+      setExistingImage(null);
+    } else if (type === "mobileImage") {
+      setExistingMobileImage(null);
+    }
   };
 
   const validateForm = () => {
@@ -180,36 +203,40 @@ export default function EditBannerPage() {
       return;
     }
 
-    const bannerPayload = {
+    const bannerPayload = cleanPayload({
       title: formData.title,
-      link: formData.link || null,
-      displayOrder: Number(formData.displayOrder) || 0,
-      startDate: formData.startDate || null,
-      endDate: formData.endDate || null,
+      link: formData.link,
+      displayOrder: Number(formData.displayOrder),
+      startDate: formData.startDate,
+      endDate: formData.endDate,
       status: formData.status,
-    };
+    });
 
-    // If existing image not changed, include url and publicId
-    if (formData.image?.isExisting) {
-      bannerPayload.image = {
-        url: formData.image.url,
-        publicId: formData.image.publicId,
-      };
+    // Handle desktop image: new upload, keep existing, or delete
+    if (formData.image?.file) {
+      // New upload - file sent via FormData
+    } else if (existingImage) {
+      // Keep existing
+      bannerPayload.image = existingImage;
+    } else {
+      // Explicit delete signal
+      bannerPayload.image = { url: "", publicId: "" };
     }
 
-    if (formData.mobileImage?.isExisting) {
-      bannerPayload.mobileImage = {
-        url: formData.mobileImage.url,
-        publicId: formData.mobileImage.publicId,
-      };
-    } else if (!formData.mobileImage) {
-      bannerPayload.mobileImage = null;
+    // Handle mobile image: new upload, keep existing, or delete
+    if (formData.mobileImage?.file) {
+      // New upload - file sent via FormData
+    } else if (existingMobileImage) {
+      // Keep existing
+      bannerPayload.mobileImage = existingMobileImage;
+    } else {
+      // Explicit delete signal
+      bannerPayload.mobileImage = { url: "", publicId: "" };
     }
 
     const payload = { data: JSON.stringify(bannerPayload) };
-    if (formData.image?.isNew && formData.image?.file)
-      payload.image = formData.image.file;
-    if (formData.mobileImage?.isNew && formData.mobileImage?.file)
+    if (formData.image?.file) payload.image = formData.image.file;
+    if (formData.mobileImage?.file)
       payload.mobileImage = formData.mobileImage.file;
 
     const loadingToast = toast.loading("Updating banner...");
@@ -416,7 +443,7 @@ export default function EditBannerPage() {
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} loading={isLoading}>
             <LuSave className="size-4" />
             {isLoading ? "Updating..." : "Update Banner"}
           </Button>

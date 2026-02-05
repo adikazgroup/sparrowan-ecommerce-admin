@@ -140,24 +140,13 @@ export default function ProductsPage() {
       header: "Stock",
       cell: (_, row) => (
         <span
-          className={`px-2 py-1 rounded text-xs font-medium ${(row.inventory?.stock || 0) > 10 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" : (row.inventory?.stock || 0) > 0 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"}`}
+          className={`px-2 py-1 rounded text-xs font-medium ${(row.stock || 0) > 10 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" : (row.stock || 0) > 0 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"}`}
         >
-          {row.inventory?.stock || 0}
+          {row.stock || 0}
         </span>
       ),
     },
-    {
-      id: "variants",
-      header: "Variants",
-      cell: (_, row) =>
-        row.hasVariants ? (
-          <span className="flex items-center gap-1 text-xs text-blue-600">
-            <LuLayers className="size-3" /> Yes
-          </span>
-        ) : (
-          <span className="text-gray-400">-</span>
-        ),
-    },
+
     {
       id: "status",
       header: "Status",
@@ -338,7 +327,7 @@ export default function ProductsPage() {
                   Stock
                 </label>
                 <p className="text-gray-800 dark:text-white">
-                  {selectedItem.inventory?.stock || 0}
+                  {selectedItem.stock || 0}
                 </p>
               </div>
               <div>

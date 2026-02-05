@@ -12,6 +12,7 @@ import {
   useUpdateTaxRuleMutation,
 } from "@/features/taxRules/taxRulesApiSlice";
 import { useGetTaxCategoryListQuery } from "@/features/taxCategories/taxCategoriesApiSlice";
+import { cleanPayload } from "@/utils/cleanPayload";
 import { handleToast } from "@/utils/handleToast";
 import { format } from "date-fns";
 
@@ -183,16 +184,19 @@ export default function TaxRuleForm({ selectedTaxRule, isEdit, onClose }) {
       return;
     }
 
-    const submitData = {
-      ...formData,
+    const submitData = cleanPayload({
+      taxCategoryId: formData.taxCategoryId,
+      country: formData.country,
+      state: formData.state,
+      type: formData.type,
       rate: Number(formData.rate),
       effectiveFrom: formData.effectiveFrom
         ? format(formData.effectiveFrom, "yyyy-MM-dd")
-        : "",
+        : null,
       effectiveTo: formData.effectiveTo
         ? format(formData.effectiveTo, "yyyy-MM-dd")
-        : "",
-    };
+        : null,
+    });
 
     const loadingToast = toast.loading(
       isEdit ? "Updating tax rule..." : "Creating tax rule...",
@@ -343,7 +347,7 @@ export default function TaxRuleForm({ selectedTaxRule, isEdit, onClose }) {
               loading={isLoading}
               endIcon={<Icon icon="lucide:check" className="size-4" />}
             >
-              {isEdit ? "Update" : "Create"} Tax Rule
+              {isEdit ? "Update Tax Rule" : "Create Tax Rule"}
             </Button>
           </div>
         </form>

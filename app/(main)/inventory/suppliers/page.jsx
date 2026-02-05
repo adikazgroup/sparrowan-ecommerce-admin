@@ -63,7 +63,6 @@ export default function SuppliersPage() {
 
   const confirmDelete = async () => {
     if (!selectedItem?._id) return;
-    const loadingToast = toast.loading("Deleting supplier...");
     const result = await deleteSupplier(selectedItem._id);
     handleToast({
       result,
@@ -71,7 +70,6 @@ export default function SuppliersPage() {
       id: "delete-supplier",
       message: "Supplier deleted!",
     });
-    toast.dismiss(loadingToast);
     if (result?.data) {
       deleteModal.close();
       setSelectedItem(null);
@@ -346,7 +344,7 @@ export default function SuppliersPage() {
             <Button
               variant="destructive"
               onClick={confirmDelete}
-              disabled={deleteLoading}
+              loading={deleteLoading}
               startIcon={<LuTrash2 className="size-4" />}
             >
               {deleteLoading ? "Deleting..." : "Delete"}

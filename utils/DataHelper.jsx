@@ -14,7 +14,7 @@ export const menuItems = [
     name: "User Management",
     key: "users",
     icon: "clarity:employee-line",
-    path: "/user",
+    path: "/users",
   },
 
   /* 3) CUSTOMERS */
@@ -53,13 +53,6 @@ export const menuItems = [
         subIcon: "hugeicons:folder-library",
         subName: "Collections",
         subPath: "/products/collections",
-      },
-      {
-        parentId: 4,
-        subId: 44,
-        subIcon: "hugeicons:layers-01",
-        subName: "Product Variants",
-        subPath: "/product-variants",
       },
     ],
   },

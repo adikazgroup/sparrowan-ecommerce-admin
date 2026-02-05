@@ -1,7 +1,6 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-
 import toast from "react-hot-toast";
 import { Input } from "../ui/input/Input";
 import { Select } from "../ui/select/Select";
@@ -9,8 +8,21 @@ import { Button } from "../ui/button/Button";
 import React, { useEffect, useState } from "react";
 import { useUpdateUserMutation } from "@/features/user/userApiSlice";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 import { userRoleOptions, userStatusOptions } from "@/utils/DataHelper";
 
+/**
+ * EditUserForm Component
+ *
+ * Professional form for editing existing users with:
+ * - Data sanitization
+ * - Loading states
+ * - Comprehensive validation
+ *
+ * @param {Object} props
+ * @param {Object} props.selectedUser - The user object to edit
+ * @param {Function} props.onClose - Callback to close the form modal
+ */
 export default function EditUserForm({ selectedUser, onClose }) {
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -22,6 +34,9 @@ export default function EditUserForm({ selectedUser, onClose }) {
   const [editErrors, setEditErrors] = useState({});
   const [updateUser, { isLoading }] = useUpdateUserMutation();
 
+  /**
+   * Initialize form with selected user data
+   */
   useEffect(() => {
     if (selectedUser) {
       setEditFormData({
@@ -33,6 +48,9 @@ export default function EditUserForm({ selectedUser, onClose }) {
     }
   }, [selectedUser]);
 
+  /**
+   * Reset form to initial state
+   */
   const resetForm = () => {
     setEditFormData({
       name: "",
@@ -43,12 +61,16 @@ export default function EditUserForm({ selectedUser, onClose }) {
     setEditErrors({});
   };
 
+  /**
+   * Handles input field changes
+   */
   const handleEditInputChange = (field, value) => {
     setEditFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
 
+    // Clear error for this field
     if (editErrors[field]) {
       setEditErrors((prev) => ({
         ...prev,
@@ -57,15 +79,21 @@ export default function EditUserForm({ selectedUser, onClose }) {
     }
   };
 
+  /**
+   * Validates the edit form
+   * @returns {boolean} - True if form is valid
+   */
   const validateEditForm = () => {
     const newErrors = {};
     let isValid = true;
 
+    // Name validation
     if (!editFormData.name.trim()) {
       newErrors.name = "Name is required";
       isValid = false;
     }
 
+    // Email validation
     if (!editFormData.email.trim()) {
       newErrors.email = "Email is required";
       isValid = false;
@@ -74,11 +102,13 @@ export default function EditUserForm({ selectedUser, onClose }) {
       isValid = false;
     }
 
+    // Role validation
     if (!editFormData.role) {
       newErrors.role = "Role is required";
       isValid = false;
     }
 
+    // Status validation
     if (!editFormData.status) {
       newErrors.status = "Status is required";
       isValid = false;
@@ -88,6 +118,9 @@ export default function EditUserForm({ selectedUser, onClose }) {
     return isValid;
   };
 
+  /**
+   * Handles form submission
+   */
   const handleEditSubmit = async (e) => {
     e.preventDefault();
 
@@ -98,28 +131,49 @@ export default function EditUserForm({ selectedUser, onClose }) {
 
     const loadingToast = toast.loading("Updating user...");
 
-    const result = await updateUser({
-      id: selectedUser._id,
-      data: editFormData,
-    });
+    try {
+      // Clean payload to remove empty/null/undefined values
+      const cleanedData = cleanPayload(editFormData);
 
-    handleToast({
-      result,
-      type: result?.data ? "success" : "error",
-      id: "edit-user",
-      message: "User updated successfully!",
-    });
+      // If profileImage is a File (new upload), use FormData
+      // If it's a string (existing URL), remove it from payload (backend keeps it)
+      let payload = cleanedData;
 
-    toast.dismiss(loadingToast);
+      if (cleanedData.profileImage instanceof File) {
+        payload = toFormData(cleanedData);
+      } else {
+        // Remove profileImage if it's just the existing URL
+        const { profileImage, ...rest } = cleanedData;
+        payload = rest;
+      }
 
-    if (result?.data) {
-      onClose();
-      resetForm();
+      const result = await updateUser({
+        id: selectedUser._id,
+        data: payload,
+      });
+
+      handleToast({
+        result,
+        type: result?.data ? "success" : "error",
+        id: "edit-user",
+        message: "User updated successfully!",
+      });
+
+      toast.dismiss(loadingToast);
+
+      if (result?.data) {
+        onClose();
+        resetForm();
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Failed to update user. Please try again.");
     }
   };
 
   return (
     <form onSubmit={handleEditSubmit} className="space-y-4 mt-3">
+      {/* Form Fields Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           label={
@@ -179,18 +233,20 @@ export default function EditUserForm({ selectedUser, onClose }) {
         />
       </div>
 
+      {/* Action Buttons */}
       <div className="flex items-center justify-end gap-3 pt-4">
         <Button
           type="button"
           variant="outline"
           onClick={onClose}
+          disabled={isLoading}
           startIcon={<Icon icon="lucide:x" className="size-4" />}
         >
           Cancel
         </Button>
         <Button
           type="submit"
-          disabled={isLoading}
+          loading={isLoading}
           endIcon={<Icon icon="lucide:check" className="size-4" />}
         >
           {isLoading ? "Updating..." : "Update User"}

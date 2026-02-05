@@ -84,9 +84,17 @@ export default function ProductCollectionsPage() {
       header: "Collection",
       cell: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
-            <LuFolderOpen className="size-4 text-primary" />
-          </div>
+          {row.image?.url ? (
+            <img
+              src={row.image.url}
+              alt={row.name}
+              className="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
+            />
+          ) : (
+            <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
+              <LuFolderOpen className="size-4 text-primary" />
+            </div>
+          )}
           <div>
             <p className="font-medium text-gray-800 dark:text-white">
               {row.name}
@@ -102,29 +110,6 @@ export default function ProductCollectionsPage() {
       cell: (_, row) => (
         <span className="px-2.5 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-full text-xs font-medium">
           {row.productCount || 0} items
-        </span>
-      ),
-    },
-    {
-      id: "isActive",
-      header: "Active",
-      cell: (_, row) =>
-        row.isActive ? (
-          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded dark:bg-green-900/30 dark:text-green-300">
-            Yes
-          </span>
-        ) : (
-          <span className="text-gray-400">No</span>
-        ),
-    },
-    {
-      id: "dateRange",
-      header: "Date Range",
-      cell: (_, row) => (
-        <span className="text-sm text-gray-600 dark:text-gray-400">
-          {row.startDate && row.endDate
-            ? `${moment(row.startDate).format("DD MMM")} - ${moment(row.endDate).format("DD MMM")}`
-            : "Always"}
         </span>
       ),
     },
@@ -297,14 +282,6 @@ export default function ProductCollectionsPage() {
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase">
-                  Active
-                </label>
-                <p className="text-gray-800 dark:text-white">
-                  {selectedItem.isActive ? "Yes" : "No"}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">
                   Display Order
                 </label>
                 <p className="text-gray-800 dark:text-white">
@@ -358,6 +335,7 @@ export default function ProductCollectionsPage() {
               variant="destructive"
               onClick={confirmDelete}
               disabled={deleteLoading}
+              loading={deleteLoading}
               startIcon={<LuTrash2 className="size-4" />}
             >
               {deleteLoading ? "Deleting..." : "Delete"}

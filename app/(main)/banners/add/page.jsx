@@ -18,6 +18,7 @@ import { Select } from "@/components/ui/select/Select";
 import { useCreateBannerMutation } from "@/features/banners/bannersApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -137,14 +138,14 @@ export default function AddBannerPage() {
       return;
     }
 
-    const bannerData = {
+    const bannerData = cleanPayload({
       title: formData.title,
-      link: formData.link || null,
+      link: formData.link,
       displayOrder: Number(formData.displayOrder) || 0,
-      startDate: formData.startDate || null,
-      endDate: formData.endDate || null,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
       status: formData.status,
-    };
+    });
 
     const payload = { data: JSON.stringify(bannerData) };
     if (formData.image?.file) payload.image = formData.image.file;
@@ -339,7 +340,7 @@ export default function AddBannerPage() {
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} loading={isLoading}>
             <LuSave className="size-4" />
             {isLoading ? "Creating..." : "Create Banner"}
           </Button>

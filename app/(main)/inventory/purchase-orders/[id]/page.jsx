@@ -21,6 +21,7 @@ import { PageSkeleton } from "@/components/skeleton/PageSkeleton";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
 import {
   useGetSinglePurchaseOrderQuery,
+  useSubmitPurchaseOrderMutation,
   useConfirmPurchaseOrderMutation,
   useReceivePurchaseOrderItemsMutation,
 } from "@/features/inventory/purchaseOrdersApiSlice";
@@ -31,7 +32,7 @@ const getStatusBadge = (status) => {
     draft: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
     pending:
       "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
-    confirmed:
+    approved:
       "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
     partial:
       "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300",
@@ -42,7 +43,7 @@ const getStatusBadge = (status) => {
   const icons = {
     draft: <LuClock className="size-4" />,
     pending: <LuClock className="size-4" />,
-    confirmed: <LuCheck className="size-4" />,
+    approved: <LuCheck className="size-4" />,
     partial: <LuClock className="size-4" />,
     received: <LuCheck className="size-4" />,
     cancelled: <LuX className="size-4" />,
@@ -71,6 +72,8 @@ export default function ViewPurchaseOrderPage() {
   const router = useRouter();
   const { data, isLoading, isError, refetch } =
     useGetSinglePurchaseOrderQuery(id);
+  const [submitPO, { isLoading: submitLoading }] =
+    useSubmitPurchaseOrderMutation();
   const [confirmPO, { isLoading: confirmLoading }] =
     useConfirmPurchaseOrderMutation();
   const [receiveItems, { isLoading: receiveLoading }] =
@@ -92,14 +95,27 @@ export default function ViewPurchaseOrderPage() {
     }
   }, [po]);
 
+  const handleSubmit = async () => {
+    const loadingToast = toast.loading("Submitting for approval...");
+    const result = await submitPO(id);
+    handleToast({
+      result,
+      type: result?.data ? "success" : "error",
+      id: "submit-po",
+      message: "Purchase order submitted for approval!",
+    });
+    toast.dismiss(loadingToast);
+    if (result?.data) refetch();
+  };
+
   const handleConfirm = async () => {
-    const loadingToast = toast.loading("Confirming order...");
+    const loadingToast = toast.loading("Approving order...");
     const result = await confirmPO(id);
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "confirm-po",
-      message: "Purchase order confirmed!",
+      message: "Purchase order approved!",
     });
     toast.dismiss(loadingToast);
     if (result?.data) refetch();
@@ -137,8 +153,9 @@ export default function ViewPurchaseOrderPage() {
     }));
   };
 
-  const canConfirm = po?.status === "draft";
-  const canReceive = ["pending", "confirmed", "partial"].includes(po?.status);
+  const canSubmit = po?.status === "draft";
+  const canApprove = po?.status === "pending";
+  const canReceive = ["approved", "partial"].includes(po?.status);
   const hasItemsToReceive = po?.items?.some(
     (item) => item.receivedQuantity < item.orderedQuantity,
   );
@@ -170,10 +187,16 @@ export default function ViewPurchaseOrderPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          {canConfirm && (
+          {canSubmit && (
+            <Button onClick={handleSubmit} disabled={submitLoading}>
+              <LuCheck className="size-4" />{" "}
+              {submitLoading ? "Submitting..." : "Submit for Approval"}
+            </Button>
+          )}
+          {canApprove && (
             <Button onClick={handleConfirm} disabled={confirmLoading}>
               <LuCheck className="size-4" />{" "}
-              {confirmLoading ? "Confirming..." : "Confirm Order"}
+              {confirmLoading ? "Approving..." : "Approve Order"}
             </Button>
           )}
         </div>
@@ -348,18 +371,6 @@ export default function ViewPurchaseOrderPage() {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Discount</span>
-                <span className="text-red-500">
-                  -{formatCurrency(po.discount)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Tax</span>
-                <span className="text-gray-800 dark:text-white">
-                  +{formatCurrency(po.tax)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Shipping</span>
                 <span className="text-gray-800 dark:text-white">
                   +{formatCurrency(po.shippingCost)}
@@ -383,17 +394,17 @@ export default function ViewPurchaseOrderPage() {
                 Payment
               </h3>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Terms</span>
-                <span className="text-gray-800 dark:text-white capitalize">
-                  {po.payment?.terms?.replace("_", " ") || "---"}
+                <span className="text-gray-500">Paid Amount</span>
+                <span className="text-gray-800 dark:text-white">
+                  {formatCurrency(po.paidAmount || 0)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Status</span>
                 <span
-                  className={`capitalize ${po.payment?.status === "paid" ? "text-green-600" : "text-amber-600"}`}
+                  className={`capitalize ${po.paymentStatus === "paid" ? "text-green-600" : po.paymentStatus === "partial" ? "text-amber-600" : "text-gray-500"}`}
                 >
-                  {po.payment?.status || "Pending"}
+                  {po.paymentStatus || "Pending"}
                 </span>
               </div>
             </div>

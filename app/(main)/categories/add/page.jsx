@@ -14,6 +14,7 @@ import { useCreateCategoryMutation } from "@/features/categories/categoriesApiSl
 import { useGetDepartmentsIdNameQuery } from "@/features/departments/departmentsApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -143,16 +144,16 @@ export default function AddCategoryPage() {
       return;
     }
 
-    const categoryData = {
+    const categoryData = cleanPayload({
       name: formData.name,
       slug: formData.slug,
       departmentId: formData.departmentId,
-      level: 0, // Root category
+      level: 0,
       description: formData.description,
       metaTitle: formData.metaTitle,
       metaDescription: formData.metaDescription,
       status: formData.status,
-    };
+    });
 
     const payload = { data: JSON.stringify(categoryData) };
     if (formData.image?.file) payload.image = formData.image.file;

@@ -14,9 +14,13 @@ import {
   useGetSingleBlogQuery,
   useUpdateBlogMutation,
 } from "@/features/blogs/blogsApiSlice";
-import { useGetCategoryIdAndNameQuery } from "@/features/categories/categoriesApiSlice";
+import {
+  useGetCategoriesIdNameQuery,
+  useGetChildrenByParentIdQuery,
+} from "@/features/categories/categoriesApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "draft", label: "Draft" },
@@ -40,13 +44,7 @@ export default function EditBlogPage() {
     { skip: !blogId },
   );
   const [updateBlog, { isLoading }] = useUpdateBlogMutation();
-  const { data: categoriesData } = useGetCategoryIdAndNameQuery();
-
-  const categoryOptions =
-    categoriesData?.data?.map((cat) => ({
-      value: cat.value,
-      label: cat.label,
-    })) || [];
+  const { data: categoriesData } = useGetCategoriesIdNameQuery({ level: 0 });
 
   const [formData, setFormData] = useState({
     title: "",
@@ -62,8 +60,39 @@ export default function EditBlogPage() {
     featuredImage: null,
   });
 
+  const [existingImage, setExistingImage] = useState(null);
   const [errors, setErrors] = useState({});
   const [isDragging, setIsDragging] = useState(false);
+
+  // Fetch subcategories when category is selected
+  const { data: subCategoriesData } = useGetChildrenByParentIdQuery(
+    formData.category,
+    { skip: !formData.category },
+  );
+
+  // Fetch child categories when subcategory is selected
+  const { data: childCategoriesData } = useGetChildrenByParentIdQuery(
+    formData.subCategory,
+    { skip: !formData.subCategory },
+  );
+
+  const categoryOptions =
+    categoriesData?.data?.map((cat) => ({
+      value: cat.value,
+      label: cat.label,
+    })) || [];
+
+  const subCategoryOptions =
+    subCategoriesData?.data?.map((cat) => ({
+      value: cat._id,
+      label: cat.name,
+    })) || [];
+
+  const childCategoryOptions =
+    childCategoriesData?.data?.map((cat) => ({
+      value: cat._id,
+      label: cat.name,
+    })) || [];
 
   useEffect(() => {
     if (blogData?.data) {
@@ -83,10 +112,10 @@ export default function EditBlogPage() {
           ? {
               url: blog.featuredImage.url,
               publicId: blog.featuredImage.publicId,
-              isExisting: true,
             }
           : null,
       });
+      setExistingImage(blog.featuredImage || null);
     }
   }, [blogData]);
 
@@ -95,6 +124,26 @@ export default function EditBlogPage() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
+  };
+
+  const handleCategoryChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      category: value,
+      subCategory: "",
+      childCategory: "",
+    }));
+    if (errors.category) {
+      setErrors((prev) => ({ ...prev, category: "" }));
+    }
+  };
+
+  const handleSubCategoryChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      subCategory: value,
+      childCategory: "",
+    }));
   };
 
   const generateSlug = (text) => {
@@ -161,6 +210,7 @@ export default function EditBlogPage() {
 
   const removeImage = () => {
     setFormData((prev) => ({ ...prev, featuredImage: null }));
+    setExistingImage(null);
   };
 
   const validateForm = () => {
@@ -180,34 +230,35 @@ export default function EditBlogPage() {
       return;
     }
 
-    const blogPayload = {
+    const blogPayload = cleanPayload({
       title: formData.title,
       slug: formData.slug,
       content: formData.content,
       category: formData.category,
-      subCategory: formData.subCategory || null,
-      childCategory: formData.childCategory || null,
+      subCategory: formData.subCategory,
+      childCategory: formData.childCategory,
       tags: formData.tags
         ? formData.tags
             .split(",")
             .map((t) => t.trim())
             .filter(Boolean)
         : [],
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
-    };
+    });
 
-    // If existing image not changed
-    if (formData.featuredImage?.isExisting) {
-      blogPayload.featuredImage = {
-        url: formData.featuredImage.url,
-        publicId: formData.featuredImage.publicId,
-      };
+    // Handle featuredImage: new upload, keep existing, or delete
+    if (formData.featuredImage?.file) {
+      // New upload - file sent via FormData
+    } else if (existingImage) {
+      blogPayload.featuredImage = existingImage;
+    } else {
+      blogPayload.featuredImage = { url: "", publicId: "" };
     }
 
     const payload = { data: JSON.stringify(blogPayload) };
-    if (formData.featuredImage?.isNew && formData.featuredImage?.file) {
+    if (formData.featuredImage?.file) {
       payload.featuredImage = formData.featuredImage.file;
     }
 
@@ -311,7 +362,7 @@ export default function EditBlogPage() {
                   <Select
                     options={categoryOptions}
                     value={formData.category}
-                    onValueChange={(val) => handleInputChange("category", val)}
+                    onValueChange={handleCategoryChange}
                     placeholder="Select category"
                     className="w-full"
                   />
@@ -321,20 +372,38 @@ export default function EditBlogPage() {
                     </p>
                   )}
                 </div>
-                <Input
-                  label="Sub Category ID"
-                  placeholder="Optional"
-                  value={formData.subCategory}
-                  onValueChange={(val) => handleInputChange("subCategory", val)}
-                />
-                <Input
-                  label="Child Category ID"
-                  placeholder="Optional"
-                  value={formData.childCategory}
-                  onValueChange={(val) =>
-                    handleInputChange("childCategory", val)
-                  }
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Sub Category
+                  </label>
+                  <Select
+                    options={subCategoryOptions}
+                    value={formData.subCategory}
+                    onValueChange={handleSubCategoryChange}
+                    placeholder="Select subcategory"
+                    className="w-full"
+                    disabled={
+                      !formData.category || subCategoryOptions.length === 0
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Child Category
+                  </label>
+                  <Select
+                    options={childCategoryOptions}
+                    value={formData.childCategory}
+                    onValueChange={(val) =>
+                      handleInputChange("childCategory", val)
+                    }
+                    placeholder="Select child category"
+                    className="w-full"
+                    disabled={
+                      !formData.subCategory || childCategoryOptions.length === 0
+                    }
+                  />
+                </div>
               </div>
             </div>
 

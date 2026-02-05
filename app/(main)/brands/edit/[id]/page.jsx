@@ -16,6 +16,7 @@ import {
 } from "@/features/brands/brandsApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -162,14 +163,23 @@ export default function EditBrandPage() {
       return;
     }
 
-    const brandPayload = {
+    const brandPayload = cleanPayload({
       name: formData.name,
       slug: formData.slug,
       description: formData.description,
       metaTitle: formData.metaTitle,
       metaDescription: formData.metaDescription,
       status: formData.status,
-    };
+    });
+
+    // Handle logo: new upload, keep existing, or delete
+    if (formData.logo?.file) {
+      // New upload - file sent via FormData
+    } else if (existingLogo) {
+      brandPayload.logo = existingLogo;
+    } else {
+      brandPayload.logo = { url: "", publicId: "" };
+    }
 
     const payload = { data: JSON.stringify(brandPayload) };
     if (formData.logo?.file) payload.logo = formData.logo.file;

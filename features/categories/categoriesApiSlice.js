@@ -36,6 +36,14 @@ const categoriesApiSlice = apiSlice.injectEndpoints({
       providesTags: ["categories"],
     }),
 
+    // Get children by parent ID (GET) - Public
+    getChildrenByParentId: builder.query({
+      query: (parentId) => ({
+        url: `/categories/${parentId}/children`,
+      }),
+      providesTags: ["categories"],
+    }),
+
     // Get single category (GET) - Admin
     getSingleCategory: builder.query({
       query: (id) => ({
@@ -79,6 +87,7 @@ export const {
   useGetCategoryListQuery,
   useGetCategoriesIdNameQuery,
   useGetCategoriesByDepartmentQuery,
+  useGetChildrenByParentIdQuery,
   useGetSingleCategoryQuery,
   useCreateCategoryMutation,
   useUpdateCategoryMutation,

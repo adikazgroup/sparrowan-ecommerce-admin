@@ -13,6 +13,7 @@ import {
   useUpdateDepartmentMutation,
 } from "@/features/departments/departmentsApiSlice";
 import generateFormData from "@/utils/generateFormData";
+import { cleanPayload } from "@/utils/cleanPayload";
 import { handleToast } from "@/utils/handleToast";
 
 const statusOptions = [
@@ -43,6 +44,7 @@ export default function DepartmentForm({
   });
 
   const [existingImage, setExistingImage] = useState(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
   const [createDepartment, { isLoading: isCreating }] =
@@ -62,6 +64,7 @@ export default function DepartmentForm({
         image: null,
       });
       setExistingImage(selectedDepartment.image || null);
+      setImageRemoved(false);
       setIsSlugManuallyEdited(true);
     }
   }, [isEdit, selectedDepartment]);
@@ -144,12 +147,14 @@ export default function DepartmentForm({
       },
     }));
     setExistingImage(null);
+    setImageRemoved(false);
     setErrors((prev) => ({ ...prev, image: "" }));
   };
 
   const removeImage = () => {
     setFormData((prev) => ({ ...prev, image: null }));
     setExistingImage(null);
+    setImageRemoved(true);
   };
 
   const validateForm = () => {
@@ -178,17 +183,35 @@ export default function DepartmentForm({
       return;
     }
 
-    const departmentData = {
+    // Image handling logic
+    let imagePayload = undefined;
+    let shouldRemoveImage = false;
+
+    if (formData.image?.file) {
+      if (existingImage) shouldRemoveImage = true;
+    } else if (existingImage && !imageRemoved) {
+      imagePayload = {
+        url: existingImage.url,
+        publicId: existingImage.publicId,
+      };
+    } else if (imageRemoved) {
+      shouldRemoveImage = true;
+    }
+
+    const departmentData = cleanPayload({
       name: formData.name,
       slug: formData.slug,
-      description: formData.description || null,
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      description: formData.description,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
-    };
+      image: imagePayload,
+      removeImage: shouldRemoveImage || undefined,
+    });
 
     const payload = { data: JSON.stringify(departmentData) };
 
+    // Handle new image file upload
     if (formData.image?.file) {
       payload.image = formData.image.file;
     }
@@ -359,7 +382,13 @@ export default function DepartmentForm({
               loading={isLoading}
               endIcon={<Icon icon="lucide:check" className="size-4" />}
             >
-              {isEdit ? "Update" : "Create"} Department
+              {isLoading
+                ? isEdit
+                  ? "Updating..."
+                  : "Creating..."
+                : isEdit
+                  ? "Update Department"
+                  : "Create Department"}
             </Button>
           </div>
         </form>

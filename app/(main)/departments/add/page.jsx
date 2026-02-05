@@ -14,6 +14,7 @@ import { useCreateDepartmentMutation } from "@/features/departments/departmentsA
 import { useGetTaxCategoriesIdNameQuery } from "@/features/taxCategories/taxCategoriesApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 import { statusOptions } from "@/utils/DataHelper";
 
 const IMAGE_FORMATS = ["jpg", "jpeg", "png", "webp"];
@@ -130,7 +131,7 @@ export default function AddDepartmentPage() {
       return;
     }
 
-    const departmentData = {
+    const departmentData = cleanPayload({
       name: formData.name,
       slug: formData.slug,
       description: formData.description,
@@ -138,7 +139,7 @@ export default function AddDepartmentPage() {
       metaTitle: formData.metaTitle,
       metaDescription: formData.metaDescription,
       status: formData.status,
-    };
+    });
 
     const payload = { data: JSON.stringify(departmentData) };
     if (formData.image?.file) payload.image = formData.image.file;

@@ -47,8 +47,16 @@ const statusColors = {
   rejected: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
 };
 
+const adjustmentTypeOptions = [
+  { value: "", label: "All Types" },
+  { value: "increase", label: "Increase" },
+  { value: "decrease", label: "Decrease" },
+  { value: "set", label: "Set" },
+];
+
 export default function StockAdjustmentsPage() {
-  const [approveAdjustment] = useApproveStockAdjustmentMutation();
+  const [approveAdjustment, { isLoading: approveLoading }] =
+    useApproveStockAdjustmentMutation();
   const [deleteAdjustment, { isLoading: deleteLoading }] =
     useDeleteStockAdjustmentMutation();
   const viewModal = useModal();
@@ -56,7 +64,11 @@ export default function StockAdjustmentsPage() {
   const approveModal = useModal();
 
   const [selectedItem, setSelectedItem] = useState(null);
-  const [filterData, setFilterData] = useState({ searchTerm: "", status: "" });
+  const [filterData, setFilterData] = useState({
+    searchTerm: "",
+    status: "",
+    adjustmentType: "",
+  });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
@@ -64,6 +76,7 @@ export default function StockAdjustmentsPage() {
   const { data, isLoading, isError, refetch } = useGetStockAdjustmentListQuery({
     searchTerm: filterData.searchTerm,
     status: filterData.status || undefined,
+    adjustmentType: filterData.adjustmentType || undefined,
     page,
     limit,
   });
@@ -301,6 +314,15 @@ export default function StockAdjustmentsPage() {
                 placeholder="Filter by Status"
                 className="w-full sm:w-40"
               />
+              <Select
+                options={adjustmentTypeOptions}
+                value={filterData.adjustmentType}
+                onValueChange={(value) =>
+                  setFilterData((prev) => ({ ...prev, adjustmentType: value }))
+                }
+                placeholder="Filter by Type"
+                className="w-full sm:w-40"
+              />
               <button
                 onClick={handleRefresh}
                 disabled={isManualRefreshing}
@@ -414,19 +436,27 @@ export default function StockAdjustmentsPage() {
             Choose action for this stock adjustment:
           </p>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={approveModal.close}>
+            <Button
+              variant="outline"
+              onClick={approveModal.close}
+              disabled={approveLoading}
+            >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={() => handleApprove("rejected")}
               startIcon={<LuX className="size-4" />}
+              loading={approveLoading}
+              disabled={approveLoading}
             >
               Reject
             </Button>
             <Button
               onClick={() => handleApprove("approved")}
               startIcon={<LuCheck className="size-4" />}
+              loading={approveLoading}
+              disabled={approveLoading}
             >
               Approve
             </Button>
@@ -457,7 +487,7 @@ export default function StockAdjustmentsPage() {
             <Button
               variant="destructive"
               onClick={confirmDelete}
-              disabled={deleteLoading}
+              loading={deleteLoading}
               startIcon={<LuTrash2 className="size-4" />}
             >
               {deleteLoading ? "Deleting..." : "Delete"}

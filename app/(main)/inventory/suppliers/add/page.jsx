@@ -13,41 +13,30 @@ import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useCreateSupplierMutation } from "@/features/inventory/suppliersApiSlice";
 import { handleToast } from "@/utils/handleToast";
 import { statusOptions } from "@/utils/DataHelper";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 export default function AddSupplierPage() {
   const router = useRouter();
   const [createSupplier, { isLoading }] = useCreateSupplierMutation();
 
+  // Form state matching server model (flat strings for address & bankDetails)
   const [formData, setFormData] = useState({
     name: "",
     code: "",
     company: "",
     email: "",
     phone: "",
+    address: "",
     paymentTerms: "",
+    bankDetails: "",
     taxId: "",
     notes: "",
     status: "active",
-    address: { street: "", city: "", state: "", country: "", postalCode: "" },
-    bankDetails: {
-      bankName: "",
-      accountNumber: "",
-      accountName: "",
-      routingNumber: "",
-    },
   });
   const [errors, setErrors] = useState({});
 
   const handleInputChange = (field, value) => {
-    if (field.includes(".")) {
-      const [parent, child] = field.split(".");
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: { ...prev[parent], [child]: value },
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    }
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
@@ -66,15 +55,16 @@ export default function AddSupplierPage() {
       return;
     }
 
-    const loadingToast = toast.loading("Creating supplier...");
-    const result = await createSupplier(formData);
+    // Clean payload to remove empty/null/undefined values
+    const cleanedData = cleanPayload(formData);
+
+    const result = await createSupplier(cleanedData);
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "create-supplier",
       message: "Supplier created!",
     });
-    toast.dismiss(loadingToast);
     if (result?.data) router.push("/inventory/suppliers");
   };
 
@@ -109,7 +99,7 @@ export default function AddSupplierPage() {
                   value={formData.name}
                   onValueChange={(val) => handleInputChange("name", val)}
                   error={errors.name}
-                  required
+                  requiredSign={true}
                 />
                 <Input
                   label="Code"
@@ -119,7 +109,7 @@ export default function AddSupplierPage() {
                     handleInputChange("code", val.toUpperCase())
                   }
                   error={errors.code}
-                  required
+                  requiredSign={true}
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -169,50 +159,13 @@ export default function AddSupplierPage() {
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                 Address
               </h2>
-              <Input
-                label="Street"
-                placeholder="123 Main St"
-                value={formData.address.street}
-                onValueChange={(val) =>
-                  handleInputChange("address.street", val)
-                }
+              <Textarea
+                label="Full Address"
+                placeholder="123 Main St, City, State, Country, Postal Code"
+                value={formData.address}
+                onValueChange={(val) => handleInputChange("address", val)}
+                rows={3}
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="City"
-                  placeholder="City"
-                  value={formData.address.city}
-                  onValueChange={(val) =>
-                    handleInputChange("address.city", val)
-                  }
-                />
-                <Input
-                  label="State"
-                  placeholder="State"
-                  value={formData.address.state}
-                  onValueChange={(val) =>
-                    handleInputChange("address.state", val)
-                  }
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Country"
-                  placeholder="Country"
-                  value={formData.address.country}
-                  onValueChange={(val) =>
-                    handleInputChange("address.country", val)
-                  }
-                />
-                <Input
-                  label="Postal Code"
-                  placeholder="Postal Code"
-                  value={formData.address.postalCode}
-                  onValueChange={(val) =>
-                    handleInputChange("address.postalCode", val)
-                  }
-                />
-              </div>
             </div>
           </div>
 
@@ -233,37 +186,12 @@ export default function AddSupplierPage() {
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                 Bank Details
               </h2>
-              <Input
-                label="Bank Name"
-                placeholder="Bank Name"
-                value={formData.bankDetails.bankName}
-                onValueChange={(val) =>
-                  handleInputChange("bankDetails.bankName", val)
-                }
-              />
-              <Input
-                label="Account Name"
-                placeholder="Account Name"
-                value={formData.bankDetails.accountName}
-                onValueChange={(val) =>
-                  handleInputChange("bankDetails.accountName", val)
-                }
-              />
-              <Input
-                label="Account Number"
-                placeholder="123456789"
-                value={formData.bankDetails.accountNumber}
-                onValueChange={(val) =>
-                  handleInputChange("bankDetails.accountNumber", val)
-                }
-              />
-              <Input
-                label="Routing Number"
-                placeholder="012345678"
-                value={formData.bankDetails.routingNumber}
-                onValueChange={(val) =>
-                  handleInputChange("bankDetails.routingNumber", val)
-                }
+              <Textarea
+                label="Bank Information"
+                placeholder="Bank Name, Account Name, Account Number, Routing Number"
+                value={formData.bankDetails}
+                onValueChange={(val) => handleInputChange("bankDetails", val)}
+                rows={3}
               />
             </div>
           </div>
@@ -275,7 +203,7 @@ export default function AddSupplierPage() {
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" loading={isLoading}>
             <LuSave className="size-4" />
             {isLoading ? "Creating..." : "Create Supplier"}
           </Button>

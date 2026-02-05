@@ -9,18 +9,23 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input/Input";
 import { Button } from "@/components/ui/button/Button";
 import { Select } from "@/components/ui/select/Select";
+import { SearchSelect } from "@/components/ui/select/SearchSelect";
 import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useCreateStockAdjustmentMutation } from "@/features/inventory/stockAdjustmentsApiSlice";
 import { useGetWarehousesIdNameQuery } from "@/features/inventory/warehousesApiSlice";
+import { useGetProductsIdNameQuery } from "@/features/products/productsApiSlice";
 import { handleToast } from "@/utils/handleToast";
 import { adjustmentTypeOptions } from "@/utils/DataHelper";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 export default function AddStockAdjustmentPage() {
   const router = useRouter();
   const [createAdjustment, { isLoading }] = useCreateStockAdjustmentMutation();
   const { data: warehousesData } = useGetWarehousesIdNameQuery();
+  const { data: productsData } = useGetProductsIdNameQuery();
 
   const warehouseOptions = warehousesData?.data || [];
+  const productOptions = productsData?.data || [];
 
   const [formData, setFormData] = useState({
     product: "",
@@ -39,7 +44,7 @@ export default function AddStockAdjustmentPage() {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.product.trim()) newErrors.product = "Product ID is required";
+    if (!formData.product) newErrors.product = "Product is required";
     if (!formData.quantity || formData.quantity <= 0)
       newErrors.quantity = "Valid quantity is required";
     if (!formData.reason.trim()) newErrors.reason = "Reason is required";
@@ -55,10 +60,11 @@ export default function AddStockAdjustmentPage() {
     }
 
     const loadingToast = toast.loading("Creating adjustment...");
-    const result = await createAdjustment({
+    const payload = cleanPayload({
       ...formData,
       quantity: Number(formData.quantity),
     });
+    const result = await createAdjustment(payload);
     handleToast({
       result,
       type: result?.data ? "success" : "error",
@@ -95,14 +101,18 @@ export default function AddStockAdjustmentPage() {
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                 Adjustment Details
               </h2>
-              <Input
-                label="Product ID"
-                placeholder="Enter product ID"
+              <SearchSelect
+                label="Product"
+                placeholder="Select a product"
+                searchPlaceholder="Search products..."
+                options={productOptions.map((p) => ({
+                  value: p.value,
+                  label: p.label,
+                }))}
                 value={formData.product}
                 onValueChange={(val) => handleInputChange("product", val)}
                 error={errors.product}
-                required
-                helperText="Enter the MongoDB ObjectId of the product"
+                requiredSign={true}
               />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select
@@ -112,7 +122,7 @@ export default function AddStockAdjustmentPage() {
                   onValueChange={(val) =>
                     handleInputChange("adjustmentType", val)
                   }
-                  required
+                  requiredSign={true}
                 />
                 <Input
                   label="Quantity"
@@ -121,7 +131,7 @@ export default function AddStockAdjustmentPage() {
                   value={formData.quantity}
                   onValueChange={(val) => handleInputChange("quantity", val)}
                   error={errors.quantity}
-                  required
+                  requiredSign={true}
                   min={1}
                 />
               </div>
@@ -131,7 +141,7 @@ export default function AddStockAdjustmentPage() {
                 value={formData.reason}
                 onValueChange={(val) => handleInputChange("reason", val)}
                 error={errors.reason}
-                required
+                requiredSign={true}
                 rows={2}
               />
               <Textarea
@@ -179,7 +189,7 @@ export default function AddStockAdjustmentPage() {
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" loading={isLoading}>
             <LuSave className="size-4" />
             {isLoading ? "Creating..." : "Create Adjustment"}
           </Button>

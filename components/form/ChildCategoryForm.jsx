@@ -15,6 +15,7 @@ import {
 } from "@/features/categories/categoriesApiSlice";
 import { useGetDepartmentsIdNameQuery } from "@/features/departments/departmentsApiSlice";
 import generateFormData from "@/utils/generateFormData";
+import { cleanPayload } from "@/utils/cleanPayload";
 import { handleToast } from "@/utils/handleToast";
 
 const statusOptions = [
@@ -47,6 +48,7 @@ export default function ChildCategoryForm({
   });
 
   const [existingImage, setExistingImage] = useState(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
   const [createCategory, { isLoading: isCreating }] =
@@ -90,6 +92,7 @@ export default function ChildCategoryForm({
         image: null,
       });
       setExistingImage(selectedCategory.image || null);
+      setImageRemoved(false);
       setIsSlugManuallyEdited(true);
     }
   }, [isEdit, selectedCategory]);
@@ -181,12 +184,14 @@ export default function ChildCategoryForm({
       },
     }));
     setExistingImage(null);
+    setImageRemoved(false);
     setErrors((prev) => ({ ...prev, image: "" }));
   };
 
   const removeImage = () => {
     setFormData((prev) => ({ ...prev, image: null }));
     setExistingImage(null);
+    setImageRemoved(true);
   };
 
   const validateForm = () => {
@@ -225,20 +230,38 @@ export default function ChildCategoryForm({
       return;
     }
 
-    const categoryData = {
+    // Image handling logic
+    let imagePayload = undefined;
+    let shouldRemoveImage = false;
+
+    if (formData.image?.file) {
+      if (existingImage) shouldRemoveImage = true;
+    } else if (existingImage && !imageRemoved) {
+      imagePayload = {
+        url: existingImage.url,
+        publicId: existingImage.publicId,
+      };
+    } else if (imageRemoved) {
+      shouldRemoveImage = true;
+    }
+
+    const categoryData = cleanPayload({
       name: formData.name,
       slug: formData.slug,
       departmentId: formData.departmentId,
       parent: formData.parent,
-      description: formData.description || null,
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      description: formData.description,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
-      level: 2, // ChildCategory
-    };
+      level: 2,
+      image: imagePayload,
+      removeImage: shouldRemoveImage || undefined,
+    });
 
     const payload = { data: JSON.stringify(categoryData) };
 
+    // Handle new image file upload
     if (formData.image?.file) {
       payload.image = formData.image.file;
     }

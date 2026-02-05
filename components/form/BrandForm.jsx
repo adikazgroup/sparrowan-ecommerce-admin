@@ -13,6 +13,7 @@ import {
   useUpdateBrandMutation,
 } from "@/features/brands/brandsApiSlice";
 import generateFormData from "@/utils/generateFormData";
+import { cleanPayload } from "@/utils/cleanPayload";
 import { handleToast } from "@/utils/handleToast";
 
 const statusOptions = [
@@ -39,6 +40,7 @@ export default function BrandForm({ selectedBrand, isEdit, onClose }) {
   });
 
   const [existingLogo, setExistingLogo] = useState(null);
+  const [imageRemoved, setImageRemoved] = useState(false); // Track if user explicitly deleted the image
   const [errors, setErrors] = useState({});
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
   const [createBrand, { isLoading: isCreating }] = useCreateBrandMutation();
@@ -56,6 +58,7 @@ export default function BrandForm({ selectedBrand, isEdit, onClose }) {
         logo: null,
       });
       setExistingLogo(selectedBrand.logo || null);
+      setImageRemoved(false);
       setIsSlugManuallyEdited(true);
     }
   }, [isEdit, selectedBrand]);
@@ -138,12 +141,14 @@ export default function BrandForm({ selectedBrand, isEdit, onClose }) {
       },
     }));
     setExistingLogo(null);
+    setImageRemoved(false); // New upload, not a removal
     setErrors((prev) => ({ ...prev, logo: "" }));
   };
 
   const removeImage = () => {
     setFormData((prev) => ({ ...prev, logo: null }));
     setExistingLogo(null);
+    setImageRemoved(true); // User explicitly deleted the image
   };
 
   const validateForm = () => {
@@ -172,14 +177,36 @@ export default function BrandForm({ selectedBrand, isEdit, onClose }) {
       return;
     }
 
-    const brandData = {
+    // Image handling logic (simple approach):
+    // 1. New file uploaded → logo: null (file sent via FormData, server handles)
+    // 2. Keep existing → logo: {url, publicId}
+    // 3. Explicitly deleted (cross button) → logo: {url: "", publicId: ""}
+    // 4. No image ever → logo: null
+
+    let logoPayload = null;
+
+    if (formData.logo?.file) {
+      // New upload - logo file sent via FormData, server will handle
+      logoPayload = null;
+    } else if (existingLogo && !imageRemoved) {
+      // Keep existing image
+      logoPayload = { url: existingLogo.url, publicId: existingLogo.publicId };
+    } else if (imageRemoved) {
+      // Explicitly deleted via cross button - send empty to signal deletion
+      logoPayload = { url: "", publicId: "" };
+    }
+
+    const brandData = cleanPayload({
       name: formData.name,
       slug: formData.slug,
-      description: formData.description || null,
-      metaTitle: formData.metaTitle || null,
-      metaDescription: formData.metaDescription || null,
+      description: formData.description,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       status: formData.status,
-    };
+    });
+
+    // Always include logo field (don't let cleanPayload remove it)
+    brandData.logo = logoPayload;
 
     const payload = { data: JSON.stringify(brandData) };
 
@@ -350,7 +377,7 @@ export default function BrandForm({ selectedBrand, isEdit, onClose }) {
               loading={isLoading}
               endIcon={<Icon icon="lucide:check" className="size-4" />}
             >
-              {isEdit ? "Update" : "Create"} Brand
+              {isEdit ? "Update Brand" : "Create Brand"}
             </Button>
           </div>
         </form>

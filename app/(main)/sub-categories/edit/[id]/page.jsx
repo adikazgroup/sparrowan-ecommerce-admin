@@ -18,6 +18,7 @@ import {
 import { useGetDepartmentsIdNameQuery } from "@/features/departments/departmentsApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
+import { cleanPayload } from "@/utils/cleanPayload";
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -169,7 +170,7 @@ export default function EditSubCategoryPage() {
       return;
     }
 
-    const catPayload = {
+    const catPayload = cleanPayload({
       name: formData.name,
       slug: formData.slug,
       departmentId: formData.departmentId,
@@ -178,7 +179,16 @@ export default function EditSubCategoryPage() {
       metaTitle: formData.metaTitle,
       metaDescription: formData.metaDescription,
       status: formData.status,
-    };
+    });
+
+    // Handle image: new upload, keep existing, or delete
+    if (formData.image?.file) {
+      // New upload - file sent via FormData
+    } else if (existingImage) {
+      catPayload.image = existingImage;
+    } else {
+      catPayload.image = { url: "", publicId: "" };
+    }
 
     const payload = { data: JSON.stringify(catPayload) };
     if (formData.image?.file) payload.image = formData.image.file;
