@@ -13,19 +13,22 @@ import {
   LuCalendar,
   LuClock,
   LuX,
+  LuDollarSign,
 } from "react-icons/lu";
 
 import { Button } from "@/components/ui/button/Button";
 import { Input } from "@/components/ui/input/Input";
+import { Modal } from "@/components/ui/modal/Modal";
 import { PageSkeleton } from "@/components/skeleton/PageSkeleton";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
 import {
   useGetSinglePurchaseOrderQuery,
-  useSubmitPurchaseOrderMutation,
   useConfirmPurchaseOrderMutation,
   useReceivePurchaseOrderItemsMutation,
+  useRecordPurchaseOrderPaymentMutation,
 } from "@/features/inventory/purchaseOrdersApiSlice";
 import { handleToast } from "@/utils/handleToast";
+import { useModal } from "@/lib/useModal";
 
 const getStatusBadge = (status) => {
   const styles = {
@@ -72,14 +75,16 @@ export default function ViewPurchaseOrderPage() {
   const router = useRouter();
   const { data, isLoading, isError, refetch } =
     useGetSinglePurchaseOrderQuery(id);
-  const [submitPO, { isLoading: submitLoading }] =
-    useSubmitPurchaseOrderMutation();
   const [confirmPO, { isLoading: confirmLoading }] =
     useConfirmPurchaseOrderMutation();
   const [receiveItems, { isLoading: receiveLoading }] =
     useReceivePurchaseOrderItemsMutation();
+  const [recordPayment, { isLoading: paymentLoading }] =
+    useRecordPurchaseOrderPaymentMutation();
 
   const [receiveQuantities, setReceiveQuantities] = useState({});
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const paymentModal = useModal();
 
   const po = data?.data;
 
@@ -153,9 +158,47 @@ export default function ViewPurchaseOrderPage() {
     }));
   };
 
-  const canSubmit = po?.status === "draft";
-  const canApprove = po?.status === "pending";
-  const canReceive = ["approved", "partial"].includes(po?.status);
+  const handleRecordPayment = async () => {
+    const amount = parseFloat(paymentAmount);
+    const remaining = po.total - (po.paidAmount || 0);
+
+    if (!amount || amount <= 0) {
+      toast.error("Please enter a valid payment amount");
+      return;
+    }
+
+    if (amount > remaining) {
+      toast.error(
+        `Payment amount cannot exceed remaining balance of ${formatCurrency(remaining)}`,
+      );
+      return;
+    }
+
+    const loadingToast = toast.loading("Recording payment...");
+    const result = await recordPayment({ id, data: { amount } });
+    handleToast({
+      result,
+      type: result?.data ? "success" : "error",
+      id: "record-payment",
+      message: "Payment recorded successfully!",
+    });
+    toast.dismiss(loadingToast);
+
+    if (result?.data) {
+      paymentModal.close();
+      setPaymentAmount("");
+      refetch();
+    }
+  };
+
+  const openPaymentModal = () => {
+    const remaining = po.total - (po.paidAmount || 0);
+    setPaymentAmount(remaining.toString());
+    paymentModal.open();
+  };
+
+  const canConfirm = po?.status === "draft";
+  const canReceive = po?.status === "confirmed";
   const hasItemsToReceive = po?.items?.some(
     (item) => item.receivedQuantity < item.orderedQuantity,
   );
@@ -187,16 +230,10 @@ export default function ViewPurchaseOrderPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          {canSubmit && (
-            <Button onClick={handleSubmit} disabled={submitLoading}>
-              <LuCheck className="size-4" />{" "}
-              {submitLoading ? "Submitting..." : "Submit for Approval"}
-            </Button>
-          )}
-          {canApprove && (
+          {canConfirm && (
             <Button onClick={handleConfirm} disabled={confirmLoading}>
               <LuCheck className="size-4" />{" "}
-              {confirmLoading ? "Approving..." : "Approve Order"}
+              {confirmLoading ? "Confirming..." : "Confirm Order"}
             </Button>
           )}
         </div>
@@ -389,28 +426,106 @@ export default function ViewPurchaseOrderPage() {
             </div>
 
             {/* Payment Info */}
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
-              <h3 className="text-xs font-medium text-gray-500 uppercase">
-                Payment
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
+              <h3 className="text-xs font-medium text-gray-500 uppercase flex items-center gap-2">
+                <LuDollarSign className="size-4" /> Payment
               </h3>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Paid Amount</span>
-                <span className="text-gray-800 dark:text-white">
+                <span className="text-gray-800 dark:text-white font-medium">
                   {formatCurrency(po.paidAmount || 0)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Remaining</span>
+                <span className="text-gray-800 dark:text-white font-medium">
+                  {formatCurrency(po.total - (po.paidAmount || 0))}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm items-center">
                 <span className="text-gray-500">Status</span>
                 <span
-                  className={`capitalize ${po.paymentStatus === "paid" ? "text-green-600" : po.paymentStatus === "partial" ? "text-amber-600" : "text-gray-500"}`}
+                  className={`capitalize font-medium ${po.paymentStatus === "paid" ? "text-green-600" : po.paymentStatus === "partial" ? "text-amber-600" : "text-gray-500"}`}
                 >
                   {po.paymentStatus || "Pending"}
                 </span>
               </div>
+              {po.paymentStatus !== "paid" && (
+                <Button
+                  onClick={openPaymentModal}
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2"
+                >
+                  <LuDollarSign className="size-4" /> Record Payment
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Payment Recording Modal */}
+      <Modal
+        open={paymentModal.isOpen}
+        onClose={paymentModal.close}
+        title="Record Payment"
+        size="small"
+      >
+        <div className="space-y-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-gray-600 dark:text-gray-400">
+                Total Amount:
+              </span>
+              <span className="font-medium text-gray-800 dark:text-white">
+                {formatCurrency(po?.total || 0)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-gray-600 dark:text-gray-400">
+                Already Paid:
+              </span>
+              <span className="font-medium text-green-600">
+                {formatCurrency(po?.paidAmount || 0)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm pt-2 border-t border-blue-200 dark:border-blue-800">
+              <span className="text-gray-600 dark:text-gray-400">
+                Remaining Balance:
+              </span>
+              <span className="font-bold text-amber-600">
+                {formatCurrency((po?.total || 0) - (po?.paidAmount || 0))}
+              </span>
+            </div>
+          </div>
+
+          <Input
+            label="Payment Amount"
+            type="number"
+            placeholder="Enter amount"
+            min="0"
+            step="0.01"
+            value={paymentAmount}
+            onValueChange={setPaymentAmount}
+            requiredSign={true}
+          />
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={paymentModal.close}
+              disabled={paymentLoading}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleRecordPayment} loading={paymentLoading}>
+              <LuDollarSign className="size-4" />
+              {paymentLoading ? "Recording..." : "Record Payment"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

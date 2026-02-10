@@ -338,9 +338,6 @@ export default function AddProductPage() {
       newErrors.variants = "At least one variant is required";
     } else {
       variants.forEach((variant, index) => {
-        if (!variant.sku || !variant.sku.trim()) {
-          newErrors[`variant_${index}_sku`] = "Variant SKU is required";
-        }
         if (
           !variant.pricing.sellingPrice ||
           parseFloat(variant.pricing.sellingPrice) <= 0
@@ -389,7 +386,7 @@ export default function AddProductPage() {
 
       // All products use variants array (minimum 1)
       variants: variants.map((v) => ({
-        sku: v.sku,
+        sku: v.sku?.trim() || undefined,
         barcode: v.barcode || undefined,
         attributes: Object.fromEntries(
           Object.entries(v.attributes).filter(([_, val]) => val),
@@ -699,7 +696,7 @@ export default function AddProductPage() {
                           <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                             <Input
                               label="Variant SKU"
-                              placeholder="IPHONE-15-PRO-BLACK"
+                              placeholder="SKU-45154"
                               value={variant.sku}
                               onValueChange={(val) =>
                                 updateVariant(
@@ -709,7 +706,6 @@ export default function AddProductPage() {
                                 )
                               }
                               error={errors[`variant_${index}_sku`]}
-                              requiredSign={true}
                             />
                             <Input
                               label="Barcode"

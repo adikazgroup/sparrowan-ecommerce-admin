@@ -819,7 +819,7 @@ export default function EditProductPage() {
                             </div>
                             <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-3">
                               <Input
-                                label="SKU *"
+                                label="SKU"
                                 placeholder="VAR-001"
                                 value={variant.sku}
                                 onValueChange={(val) =>
@@ -830,6 +830,7 @@ export default function EditProductPage() {
                                   )
                                 }
                                 error={errors[`variant_${index}_sku`]}
+                                requiredSign={true}
                               />
                               <Input
                                 label="Barcode"
@@ -915,7 +916,7 @@ export default function EditProductPage() {
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <Input
-                              label="Selling Price (৳) *"
+                              label="Selling Price (৳)"
                               type="number"
                               placeholder="0"
                               value={variant.pricing.sellingPrice}
@@ -927,6 +928,7 @@ export default function EditProductPage() {
                                 )
                               }
                               error={errors[`variant_${index}_sellingPrice`]}
+                              requiredSign={true}
                             />
                             <Select
                               label="Discount Type"

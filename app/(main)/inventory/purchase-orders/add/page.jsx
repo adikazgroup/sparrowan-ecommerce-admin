@@ -61,10 +61,10 @@ export default function AddPurchaseOrderPage() {
   const [items, setItems] = useState([createEmptyItem()]);
   const [errors, setErrors] = useState({});
 
-  // Track which products need variants loaded
+  // Track which products need variants loaded (all products have at least 1 variant)
   const productIdsNeedingVariants = useMemo(() => {
     return items
-      .filter((item) => item.productData?.hasVariants && !item.variant)
+      .filter((item) => item.productData?.variantCount >= 1 && !item.variant)
       .map((item) => item.product)
       .filter(Boolean);
   }, [items]);
@@ -89,14 +89,8 @@ export default function AddPurchaseOrderPage() {
           updated.productData = selectedProduct || null;
           updated.variant = "";
           updated.variantData = null;
-
-          if (selectedProduct && !selectedProduct.hasVariants) {
-            updated.displayName = selectedProduct.label;
-            updated.sku = selectedProduct.sku || "";
-          } else {
-            updated.displayName = "";
-            updated.sku = "";
-          }
+          updated.displayName = "";
+          updated.sku = "";
         }
 
         if (field === "variant" && extraData) {
@@ -147,8 +141,8 @@ export default function AddPurchaseOrderPage() {
       newErrors.items = "At least one product is required";
     } else {
       for (const item of validItems) {
-        if (item.productData?.hasVariants && !item.variant) {
-          newErrors.items = "Please select variant for products with variants";
+        if (item.productData?.variantCount >= 1 && !item.variant) {
+          newErrors.items = "Please select a variant for all products";
           break;
         }
         if (!item.orderedQuantity || item.orderedQuantity <= 0) {
@@ -370,6 +364,15 @@ export default function AddPurchaseOrderPage() {
                     </span>
                   </div>
                 </div>
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Payment Status</span>
+                    <span className="text-gray-500 capitalize">Pending</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Payment can be recorded after order creation
+                  </p>
+                </div>
               </div>
               <div className="pt-4 space-y-2">
                 <Button type="submit" loading={isLoading} className="w-full">
@@ -400,15 +403,24 @@ function POItemRow({
   formatCurrency,
 }) {
   const productId = item.product;
-  const hasVariants = item.productData?.hasVariants;
+  const hasVariants = (item.productData?.variantCount || 0) >= 1;
 
-  // Only fetch variants if product has variants
+  // Fetch variants for all products (every product has at least 1 variant)
   const { data: variantsData, isLoading: variantsLoading } =
     useGetVariantsByProductQuery(productId, {
       skip: !productId || !hasVariants,
     });
 
   const variantOptions = variantsData?.data || [];
+
+  // Auto-select default variant for single-variant products when data loads
+  useEffect(() => {
+    if (productId && variantOptions.length === 1 && !item.variant) {
+      // Auto-select the only variant (default)
+      const defaultVariant = variantOptions[0];
+      updateItem(item.id, "variant", defaultVariant._id, defaultVariant);
+    }
+  }, [productId, variantOptions, item.variant, item.id, updateItem]);
 
   const itemTotal =
     ((parseFloat(item.unitCost) || 0) -
@@ -432,7 +444,7 @@ function POItemRow({
             { value: "", label: "Select Product" },
             ...productOptions.map((p) => ({
               value: p.value,
-              label: `${p.label}${p.hasVariants ? " (has variants)" : ""}`,
+              label: `${p.label}${p.variantCount > 1 ? " (multiple variants)" : ""}`,
             })),
           ]}
           value={item.product}

@@ -34,8 +34,7 @@ import { handleToast } from "@/utils/handleToast";
 const statusOptions = [
   { value: "", label: "All Status" },
   { value: "draft", label: "Draft" },
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
+  { value: "confirmed", label: "Confirmed" },
   { value: "received", label: "Received" },
   { value: "cancelled", label: "Cancelled" },
 ];
@@ -50,19 +49,16 @@ const paymentStatusOptions = [
 const getStatusBadge = (status) => {
   const styles = {
     draft: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-    pending:
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
-    approved:
+    confirmed:
       "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
     received:
       "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
     cancelled: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
   };
   const icons = {
-    draft: <LuClock className="size-3.5" />,
-    pending: <LuClock className="size-3.5" />,
-    approved: <LuCheck className="size-3.5" />,
-    received: <LuCheck className="size-3.5" />,
+    draft: <LuPencil className="size-3.5" />,
+    confirmed: <LuCheck className="size-3.5" />,
+    received: <LuPackage className="size-3.5" />,
     cancelled: <LuX className="size-3.5" />,
   };
   return (
@@ -182,22 +178,44 @@ export default function PurchaseOrdersPage() {
       ),
     },
     {
-      id: "warehouse",
-      header: "Warehouse",
+      id: "total",
+      header: "Amount Info",
       cell: (_, row) => (
-        <span className="text-gray-600 dark:text-gray-400 text-sm">
-          {row.warehouse?.name || "---"}
-        </span>
+        <div className="flex flex-col">
+          <span className="font-medium text-gray-800 dark:text-white">
+            Total: {formatCurrency(row.total)}
+          </span>
+          <span className="text-xs text-gray-500">
+            Paid: {formatCurrency(row.paidAmount || 0)}
+          </span>
+        </div>
       ),
     },
     {
-      id: "total",
-      header: "Total",
-      cell: (_, row) => (
-        <span className="font-medium text-gray-800 dark:text-white">
-          {formatCurrency(row.total)}
-        </span>
-      ),
+      id: "paymentStatus",
+      header: "Payment Status",
+      cell: (_, row) => {
+        const paymentStyles = {
+          pending:
+            "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+          partial:
+            "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
+          paid: "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300",
+        };
+        const paymentIcons = {
+          pending: <LuClock className="size-3.5" />,
+          partial: <LuClock className="size-3.5" />,
+          paid: <LuCheck className="size-3.5" />,
+        };
+        const status = row.paymentStatus || "pending";
+        return (
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium capitalize ${paymentStyles[status]}`}
+          >
+            {paymentIcons[status]} {status}
+          </span>
+        );
+      },
     },
     {
       id: "status",
