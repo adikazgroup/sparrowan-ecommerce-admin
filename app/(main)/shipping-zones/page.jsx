@@ -102,24 +102,24 @@ export default function ShippingZonesPage() {
     }
   };
 
-  const getDefaultRate = (rates) => {
-    const defaultRate = rates?.find((r) => r.isDefault) || rates?.[0];
-    return defaultRate?.flatRate || 0;
-  };
-
   const columns = [
     {
       id: "zone",
-      header: "Zone",
+      header: "Zone Name",
       cell: (_, row) => (
         <div>
-          <p className="font-medium text-gray-800 dark:text-white flex items-center gap-2">
-            <LuGlobe className="size-4 text-gray-400" />
-            {row.name}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Priority: {row.priority || 0}
-          </p>
+          <div className="flex items-center gap-2">
+            <LuGlobe className="size-4 text-primary" />
+            <p className="font-semibold text-gray-900 dark:text-white">
+              {row.name}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-gray-500">Priority:</span>
+            <span className="text-xs font-medium px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+              {row.priority || 0}
+            </span>
+          </div>
         </div>
       ),
     },
@@ -127,36 +127,76 @@ export default function ShippingZonesPage() {
       id: "coverage",
       header: "Coverage",
       cell: (_, row) => (
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          <div className="flex items-center gap-1">
-            <LuMapPin className="size-3.5" />
-            <span>{row.countries?.join(", ") || "-"}</span>
+        <div className="space-y-2">
+          <div>
+            <div className="flex items-center gap-1.5 mb-1">
+              <LuMapPin className="size-3.5 text-gray-400" />
+              <span className="text-xs font-medium text-gray-500">
+                Countries
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {row.countries?.map((country, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded text-xs font-medium"
+                >
+                  {country}
+                </span>
+              ))}
+            </div>
           </div>
+          {row.states?.length > 0 && (
+            <div>
+              <span className="text-xs text-gray-500">
+                {row.states.length} State{row.states.length > 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
           {row.cities?.length > 0 && (
-            <p className="text-xs text-gray-500 mt-1 truncate max-w-[200px]">
-              {row.cities.slice(0, 3).join(", ")}
-              {row.cities.length > 3 ? `... +${row.cities.length - 3}` : ""}
-            </p>
+            <div>
+              <span className="text-xs text-gray-500">
+                {row.cities.length} Cit{row.cities.length > 1 ? "ies" : "y"}
+              </span>
+            </div>
           )}
         </div>
       ),
     },
     {
-      id: "rate",
-      header: "Shipping Rate",
-      cell: (_, row) => (
-        <div className="flex items-center gap-2">
-          <LuTruck className="size-4 text-gray-400" />
-          <span className="font-semibold text-gray-800 dark:text-white">
-            ৳{getDefaultRate(row.rates)}
-          </span>
-          {row.freeShippingEnabled && row.freeShippingThreshold && (
-            <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded">
-              Free over ৳{row.freeShippingThreshold}
-            </span>
-          )}
-        </div>
-      ),
+      id: "rates",
+      header: "Shipping Rates",
+      cell: (_, row) => {
+        const ratesCount = row.rates?.length || 0;
+        const rateTypes = [...new Set(row.rates?.map((r) => r.rateType) || [])];
+
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <LuTruck className="size-4 text-gray-400" />
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {ratesCount} Rate{ratesCount > 1 ? "s" : ""}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {rateTypes.map((type, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs capitalize"
+                >
+                  {type?.replace("_", " ")}
+                </span>
+              ))}
+            </div>
+            {row.freeShippingEnabled && row.freeShippingThreshold && (
+              <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded font-medium">
+                <LuCheck className="size-3" />
+                Free over ৳{row.freeShippingThreshold}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: "status",
@@ -174,7 +214,7 @@ export default function ShippingZonesPage() {
               setSelectedZone(row);
               viewModal.open();
             }}
-            className="size-8 center text-blue-600 bg-blue-100/50 rounded dark:text-blue-300 dark:bg-blue-900/30"
+            className="size-8 center text-blue-600 bg-blue-100/50 rounded dark:text-blue-300 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
             aria-label="View"
           >
             <LuEye className="size-4" />
@@ -182,7 +222,7 @@ export default function ShippingZonesPage() {
           <Link
             href={`/shipping-zones/edit/${row._id}`}
             onClick={(e) => e.stopPropagation()}
-            className="size-8 center text-amber-600 bg-amber-100/50 rounded dark:text-amber-300 dark:bg-amber-900/30"
+            className="size-8 center text-amber-600 bg-amber-100/50 rounded dark:text-amber-300 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
             aria-label="Edit"
           >
             <LuPencil className="size-4" />
@@ -193,7 +233,7 @@ export default function ShippingZonesPage() {
               setSelectedZone(row);
               deleteModal.open();
             }}
-            className="size-8 center text-destructive bg-red-100/50 rounded dark:text-red-300 dark:bg-red-900/30"
+            className="size-8 center text-destructive bg-red-100/50 rounded dark:text-red-300 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
             aria-label="Delete"
           >
             <LuTrash2 className="size-4" />
@@ -243,13 +283,14 @@ export default function ShippingZonesPage() {
         size="large"
       >
         {selectedZone && (
-          <div className="space-y-4">
+          <div className="space-y-5">
+            {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Name
+                  Zone Name
                 </label>
-                <p className="text-gray-800 dark:text-white">
+                <p className="text-gray-800 dark:text-white font-medium mt-1">
                   {selectedZone.name}
                 </p>
               </div>
@@ -263,87 +304,140 @@ export default function ShippingZonesPage() {
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Countries
-                </label>
-                <p className="text-gray-800 dark:text-white">
-                  {selectedZone.countries?.join(", ") || "-"}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Priority
                 </label>
-                <p className="text-gray-800 dark:text-white">
+                <p className="text-gray-800 dark:text-white mt-1">
                   {selectedZone.priority || 0}
                 </p>
               </div>
-            </div>
-            {selectedZone.cities?.length > 0 && (
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Cities
+                  Total Rates
                 </label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {selectedZone.cities.map((city, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm"
-                    >
-                      {city}
-                    </span>
-                  ))}
-                </div>
+                <p className="text-gray-800 dark:text-white mt-1">
+                  {selectedZone.rates?.length || 0}
+                </p>
               </div>
-            )}
+            </div>
+
+            {/* Coverage */}
+            <div>
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">
+                Coverage Area
+              </label>
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-3">
+                <div>
+                  <span className="text-xs text-gray-500">Countries:</span>
+                  <p className="text-gray-800 dark:text-white">
+                    {selectedZone.countries?.join(", ") || "-"}
+                  </p>
+                </div>
+                {selectedZone.states?.length > 0 && (
+                  <div>
+                    <span className="text-xs text-gray-500">
+                      States/Divisions:
+                    </span>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {selectedZone.states.map((state, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded text-sm"
+                        >
+                          {state}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedZone.cities?.length > 0 && (
+                  <div>
+                    <span className="text-xs text-gray-500">Cities:</span>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {selectedZone.cities.map((city, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm"
+                        >
+                          {city}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Shipping Rates */}
             {selectedZone.rates?.length > 0 && (
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">
                   Shipping Rates
                 </label>
-                <div className="mt-2 space-y-2">
+                <div className="space-y-2">
                   {selectedZone.rates.map((rate, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      className={`p-4 rounded-lg border ${
+                        rate.isDefault
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+                      }`}
                     >
-                      <div>
-                        <p className="font-medium text-gray-800 dark:text-white">
-                          {rate.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {rate.estimatedDeliveryDays?.min || 1}-
-                          {rate.estimatedDeliveryDays?.max || 3} days
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-primary">
-                          ৳{rate.flatRate || 0}
-                        </p>
-                        {rate.isDefault && (
-                          <span className="text-xs text-green-600">
-                            Default
-                          </span>
-                        )}
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-800 dark:text-white">
+                              {rate.name}
+                            </p>
+                            {rate.isDefault && (
+                              <span className="text-xs bg-primary text-white px-2 py-0.5 rounded">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-2 space-y-1 text-sm">
+                            <p className="text-gray-600 dark:text-gray-400">
+                              <span className="text-gray-500">Type:</span>{" "}
+                              <span className="capitalize">
+                                {rate.rateType?.replace("_", " ")}
+                              </span>
+                            </p>
+                            <p className="text-gray-600 dark:text-gray-400">
+                              <span className="text-gray-500">Delivery:</span>{" "}
+                              {rate.estimatedDeliveryDays?.min || 1}-
+                              {rate.estimatedDeliveryDays?.max || 3} days
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-primary">
+                            ৳{rate.flatRate || 0}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Free Shipping */}
             {selectedZone.freeShippingEnabled && (
-              <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
-                <p className="text-green-800 dark:text-green-300">
-                  Free shipping on orders over{" "}
+              <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-800">
+                <p className="text-green-800 dark:text-green-300 font-medium">
+                  🎉 Free shipping available on orders over{" "}
                   <strong>৳{selectedZone.freeShippingThreshold}</strong>
                 </p>
               </div>
             )}
-            <div className="flex justify-end gap-2">
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
               <Button variant="outline" onClick={viewModal.close}>
                 Close
               </Button>
               <Link href={`/shipping-zones/edit/${selectedZone._id}`}>
-                <Button onClick={viewModal.close}>Edit</Button>
+                <Button onClick={viewModal.close}>Edit Zone</Button>
               </Link>
             </div>
           </div>
