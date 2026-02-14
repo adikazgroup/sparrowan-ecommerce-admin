@@ -207,8 +207,12 @@ export default function EditBannerPage() {
       title: formData.title,
       link: formData.link,
       displayOrder: Number(formData.displayOrder),
-      startDate: formData.startDate,
-      endDate: formData.endDate,
+      startDate: formData.startDate
+        ? new Date(formData.startDate).toISOString()
+        : undefined,
+      endDate: formData.endDate
+        ? new Date(formData.endDate).toISOString()
+        : undefined,
       status: formData.status,
     });
 

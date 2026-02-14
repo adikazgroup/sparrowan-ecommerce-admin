@@ -15,7 +15,7 @@ import {
   useUpdateSupplierMutation,
 } from "@/features/inventory/suppliersApiSlice";
 import { handleToast } from "@/utils/handleToast";
-import { statusOptions } from "@/utils/DataHelper";
+import { statusOptions, paymentTermsOptions } from "@/utils/DataHelper";
 import { PageSkeleton } from "@/components/skeleton/PageSkeleton";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
 import { cleanPayload } from "@/utils/cleanPayload";
@@ -173,9 +173,10 @@ export default function EditSupplierPage() {
                   onValueChange={(val) => handleInputChange("phone", val)}
                 />
               </div>
-              <Input
+              <Select
                 label="Payment Terms"
-                placeholder="Net 30"
+                options={paymentTermsOptions}
+                placeholder="Select Payment Terms"
                 value={formData.paymentTerms}
                 onValueChange={(val) => handleInputChange("paymentTerms", val)}
               />
@@ -224,7 +225,7 @@ export default function EditSupplierPage() {
                 placeholder="Bank Name, Account Name, Account Number, Routing Number"
                 value={formData.bankDetails}
                 onValueChange={(val) => handleInputChange("bankDetails", val)}
-                rows={3}
+                rows={6}
               />
             </div>
           </div>

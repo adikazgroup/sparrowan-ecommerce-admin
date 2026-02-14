@@ -9,11 +9,14 @@ import { LuArrowLeft, LuSave, LuLoader } from "react-icons/lu";
 import { Input } from "@/components/ui/input/Input";
 import { Button } from "@/components/ui/button/Button";
 import { Select } from "@/components/ui/select/Select";
+import { MultipleSearchSelect } from "@/components/ui/select/MultipleSearchSelect";
 import { Textarea } from "@/components/ui/textarea/Textarea";
 import {
   useGetSingleCouponQuery,
   useUpdateCouponMutation,
 } from "@/features/coupons/couponsApiSlice";
+import { useGetProductsIdNameQuery } from "@/features/products/productsApiSlice";
+import { useGetCustomersIdNameQuery } from "@/features/customers/customersApiSlice";
 import { handleToast } from "@/utils/handleToast";
 import { cleanPayload } from "@/utils/cleanPayload";
 
@@ -33,11 +36,6 @@ const scopeOptions = [
   { value: "specific", label: "Specific Products" },
 ];
 
-const visibilityOptions = [
-  { value: "public", label: "Public" },
-  { value: "private", label: "Private" },
-];
-
 export default function EditCouponPage() {
   const router = useRouter();
   const params = useParams();
@@ -46,6 +44,8 @@ export default function EditCouponPage() {
   const { data: couponData, isLoading: isFetching } =
     useGetSingleCouponQuery(couponId);
   const [updateCoupon, { isLoading }] = useUpdateCouponMutation();
+  const { data: productsData } = useGetProductsIdNameQuery();
+  const { data: customersData } = useGetCustomersIdNameQuery();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -54,12 +54,13 @@ export default function EditCouponPage() {
     type: "percentage",
     discountValue: "",
     scope: "all",
+    applicableProducts: [],
     minOrderAmount: "",
     usageLimit: "",
     startDate: "",
     endDate: "",
-    visibility: "private",
     isPublic: true,
+    eligibleCustomers: [],
     status: "active",
   });
 
@@ -75,12 +76,15 @@ export default function EditCouponPage() {
         type: coupon.type || "percentage",
         discountValue: coupon.discountValue || "",
         scope: coupon.scope || "all",
+        applicableProducts:
+          coupon.applicableProducts?.map((p) => p._id || p) || [],
         minOrderAmount: coupon.minOrderAmount || "",
         usageLimit: coupon.usageLimit || "",
         startDate: coupon.startDate ? coupon.startDate.split("T")[0] : "",
         endDate: coupon.endDate ? coupon.endDate.split("T")[0] : "",
-        visibility: coupon.visibility || "private",
         isPublic: coupon.isPublic ?? true,
+        eligibleCustomers:
+          coupon.eligibleCustomers?.map((c) => c._id || c) || [],
         status: coupon.status || "active",
       });
     }
@@ -106,6 +110,12 @@ export default function EditCouponPage() {
     ) {
       newErrors.discountValue = "Percentage cannot exceed 100%";
     }
+    if (
+      formData.scope === "specific" &&
+      formData.applicableProducts.length === 0
+    ) {
+      newErrors.applicableProducts = "At least one product is required";
+    }
     if (!formData.startDate) newErrors.startDate = "Start date is required";
     if (!formData.endDate) newErrors.endDate = "End date is required";
     if (
@@ -114,6 +124,9 @@ export default function EditCouponPage() {
       formData.startDate >= formData.endDate
     ) {
       newErrors.endDate = "End date must be after start date";
+    }
+    if (!formData.isPublic && formData.eligibleCustomers.length === 0) {
+      newErrors.eligibleCustomers = "At least one customer is required";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -133,13 +146,22 @@ export default function EditCouponPage() {
       type: formData.type,
       discountValue: Number(formData.discountValue),
       scope: formData.scope,
+      applicableProducts:
+        formData.scope === "specific" ? formData.applicableProducts : undefined,
       minOrderAmount: formData.minOrderAmount
         ? Number(formData.minOrderAmount)
         : undefined,
       usageLimit: formData.usageLimit ? Number(formData.usageLimit) : null,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
+      startDate: formData.startDate
+        ? new Date(formData.startDate).toISOString()
+        : undefined,
+      endDate: formData.endDate
+        ? new Date(formData.endDate).toISOString()
+        : undefined,
       isPublic: formData.isPublic,
+      eligibleCustomers: !formData.isPublic
+        ? formData.eligibleCustomers
+        : undefined,
       status: formData.status,
     });
 
@@ -291,6 +313,22 @@ export default function EditCouponPage() {
                   onValueChange={(val) => handleInputChange("usageLimit", val)}
                 />
               </div>
+              {/* Applicable Products - Only show when scope is specific */}
+              {formData.scope === "specific" && (
+                <div>
+                  <MultipleSearchSelect
+                    label="Select Products"
+                    options={productsData?.data || []}
+                    value={formData.applicableProducts}
+                    onValueChange={(val) =>
+                      handleInputChange("applicableProducts", val)
+                    }
+                    error={errors.applicableProducts}
+                    requiredSign={true}
+                    placeholder="Select products for this coupon"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Validity Period */}
@@ -334,17 +372,11 @@ export default function EditCouponPage() {
               />
             </div>
 
-            {/* Visibility */}
+            {/* Coupon Visibility */}
             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                Visibility
+                Coupon Visibility
               </h2>
-              <Select
-                options={visibilityOptions}
-                value={formData.visibility}
-                onValueChange={(val) => handleInputChange("visibility", val)}
-                className="w-full"
-              />
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -359,10 +391,35 @@ export default function EditCouponPage() {
                   htmlFor="isPublic"
                   className="text-sm text-gray-600 dark:text-gray-400"
                 >
-                  Show in public coupon list
+                  Public coupon (visible to all customers)
                 </label>
               </div>
+              <p className="text-xs text-gray-500">
+                {formData.isPublic
+                  ? "This coupon will be visible to all customers"
+                  : "This coupon will only be available to selected customers"}
+              </p>
             </div>
+
+            {/* Eligible Customers - Only show when isPublic is false */}
+            {!formData.isPublic && (
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
+                <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                  Eligible Customers
+                </h2>
+                <MultipleSearchSelect
+                  label="Select Customers"
+                  options={customersData?.data || []}
+                  value={formData.eligibleCustomers}
+                  onValueChange={(val) =>
+                    handleInputChange("eligibleCustomers", val)
+                  }
+                  error={errors.eligibleCustomers}
+                  requiredSign={true}
+                  placeholder="Select customers for this coupon"
+                />
+              </div>
+            )}
 
             {/* Usage Stats */}
             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">

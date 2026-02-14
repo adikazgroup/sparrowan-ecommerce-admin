@@ -105,11 +105,47 @@ export default function ProductCollectionsPage() {
       ),
     },
     {
+      id: "displayOrder",
+      header: "Order",
+      cell: (_, row) => (
+        <span className="text-gray-600 dark:text-gray-400 font-medium">
+          #{row.displayOrder || 0}
+        </span>
+      ),
+    },
+    {
       id: "products",
       header: "Products",
       cell: (_, row) => (
         <span className="px-2.5 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-full text-xs font-medium">
           {row.productCount || 0} items
+        </span>
+      ),
+    },
+    {
+      id: "schedule",
+      header: "Schedule",
+      cell: (_, row) => (
+        <div className="flex flex-col text-xs text-gray-500 gap-0.5">
+          <span className="whitespace-nowrap">
+            <span className="font-medium">Start:</span>{" "}
+            {row.startDate
+              ? moment(row.startDate).format("MMM D, YYYY")
+              : "N/A"}
+          </span>
+          <span className="whitespace-nowrap">
+            <span className="font-medium">End:</span>{" "}
+            {row.endDate ? moment(row.endDate).format("MMM D, YYYY") : "N/A"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: "createdAt",
+      header: "Created",
+      cell: (_, row) => (
+        <span className="text-sm text-gray-700 dark:text-gray-300">
+          {moment(row.createdAt).format("MMM D, YYYY")}
         </span>
       ),
     },

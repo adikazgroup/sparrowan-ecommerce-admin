@@ -142,8 +142,12 @@ export default function AddBannerPage() {
       title: formData.title,
       link: formData.link,
       displayOrder: Number(formData.displayOrder) || 0,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
+      startDate: formData.startDate
+        ? new Date(formData.startDate).toISOString()
+        : undefined,
+      endDate: formData.endDate
+        ? new Date(formData.endDate).toISOString()
+        : undefined,
       status: formData.status,
     });
 

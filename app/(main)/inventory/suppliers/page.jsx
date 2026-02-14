@@ -248,7 +248,7 @@ export default function SuppliersPage() {
         open={viewModal.isOpen}
         onClose={viewModal.close}
         title="Supplier Details"
-        size="medium"
+        size="large"
       >
         {selectedItem && (
           <div className="space-y-4">
@@ -282,7 +282,7 @@ export default function SuppliersPage() {
                   {selectedItem.status}
                 </p>
               </div>
-              <div>
+              <div className="col-span-2">
                 <label className="text-xs font-medium text-gray-500 uppercase">
                   Email
                 </label>

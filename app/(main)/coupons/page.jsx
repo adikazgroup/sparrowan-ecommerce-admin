@@ -180,6 +180,15 @@ export default function CouponsPage() {
       ),
     },
     {
+      id: "scope",
+      header: "Scope",
+      cell: (_, row) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+          {row.scope === "specific" ? "Specific Products" : "All Products"}
+        </span>
+      ),
+    },
+    {
       id: "usage",
       header: "Usage",
       cell: (_, row) => (

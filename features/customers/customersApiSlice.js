@@ -7,6 +7,10 @@ const customersApiSlice = apiSlice.injectEndpoints({
       query: (data) => ({ url: `/admin/customers${buildQueryParams(data)}` }),
       providesTags: ["customers"],
     }),
+    getCustomersIdName: builder.query({
+      query: () => ({ url: "/admin/customers/id-name" }),
+      providesTags: ["customers"],
+    }),
     getSingleCustomer: builder.query({
       query: (id) => ({ url: `/admin/customers/${id}` }),
       providesTags: ["customers"],
@@ -44,6 +48,7 @@ const customersApiSlice = apiSlice.injectEndpoints({
 
 export const {
   useGetCustomerListQuery,
+  useGetCustomersIdNameQuery,
   useGetSingleCustomerQuery,
   useCreateCustomerMutation,
   useUpdateCustomerMutation,

@@ -12,7 +12,7 @@ import { Select } from "@/components/ui/select/Select";
 import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useCreateSupplierMutation } from "@/features/inventory/suppliersApiSlice";
 import { handleToast } from "@/utils/handleToast";
-import { statusOptions } from "@/utils/DataHelper";
+import { statusOptions, paymentTermsOptions } from "@/utils/DataHelper";
 import { cleanPayload } from "@/utils/cleanPayload";
 
 export default function AddSupplierPage() {
@@ -140,9 +140,10 @@ export default function AddSupplierPage() {
                   onValueChange={(val) => handleInputChange("phone", val)}
                 />
               </div>
-              <Input
+              <Select
                 label="Payment Terms"
-                placeholder="Net 30"
+                options={paymentTermsOptions}
+                placeholder="Select Payment Terms"
                 value={formData.paymentTerms}
                 onValueChange={(val) => handleInputChange("paymentTerms", val)}
               />
@@ -191,7 +192,7 @@ export default function AddSupplierPage() {
                 placeholder="Bank Name, Account Name, Account Number, Routing Number"
                 value={formData.bankDetails}
                 onValueChange={(val) => handleInputChange("bankDetails", val)}
-                rows={3}
+                rows={6}
               />
             </div>
           </div>

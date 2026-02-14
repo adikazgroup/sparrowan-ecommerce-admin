@@ -43,7 +43,7 @@ export default function AddBlogPage() {
     category: "",
     subCategory: "",
     childCategory: "",
-    tags: "",
+    tags: [],
     metaTitle: "",
     metaDescription: "",
     status: "draft",
@@ -217,12 +217,7 @@ export default function AddBlogPage() {
       category: formData.category,
       subCategory: formData.subCategory,
       childCategory: formData.childCategory,
-      tags: formData.tags
-        ? formData.tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean)
-        : [],
+      tags: formData.tags,
       metaTitle: formData.metaTitle,
       metaDescription: formData.metaDescription,
       status: formData.status,
@@ -409,12 +404,67 @@ export default function AddBlogPage() {
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                 Tags
               </h2>
-              <Input
-                placeholder="tag1, tag2, tag3"
-                value={formData.tags}
-                onValueChange={(val) => handleInputChange("tags", val)}
-              />
-              <p className="text-xs text-gray-500">Separate tags with commas</p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter a tag"
+                  value={formData.newTag || ""}
+                  onValueChange={(val) => handleInputChange("newTag", val)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const tag = formData.newTag?.trim();
+                      if (tag && !formData.tags.includes(tag)) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          tags: [...prev.tags, tag],
+                          newTag: "",
+                        }));
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const tag = formData.newTag?.trim();
+                    if (tag && !formData.tags.includes(tag)) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        tags: [...prev.tags, tag],
+                        newTag: "",
+                      }));
+                    }
+                  }}
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  Add
+                </Button>
+              </div>
+              {formData.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            tags: prev.tags.filter((_, i) => i !== idx),
+                          }));
+                        }}
+                        className="hover:bg-primary/20 rounded-full p-0.5"
+                      >
+                        <LuX className="size-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Featured Image */}

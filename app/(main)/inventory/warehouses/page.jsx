@@ -112,18 +112,7 @@ export default function WarehousesPage() {
         </span>
       ),
     },
-    {
-      id: "isDefault",
-      header: "Default",
-      cell: (_, row) =>
-        row.isDefault ? (
-          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded dark:bg-green-900/30 dark:text-green-300">
-            Yes
-          </span>
-        ) : (
-          <span className="text-gray-400">-</span>
-        ),
-    },
+
     {
       id: "status",
       header: "Status",
@@ -299,14 +288,6 @@ export default function WarehousesPage() {
                 </label>
                 <p className="text-gray-800 dark:text-white">
                   {selectedItem.contact?.phone || "N/A"}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">
-                  Default
-                </label>
-                <p className="text-gray-800 dark:text-white">
-                  {selectedItem.isDefault ? "Yes" : "No"}
                 </p>
               </div>
             </div>

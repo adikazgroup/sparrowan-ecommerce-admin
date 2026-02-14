@@ -273,3 +273,20 @@ export const discountTypeOptions = [
   { value: "percentage", label: "Percentage (%)" },
   { value: "flat", label: "Flat Amount" },
 ];
+
+// Payment Terms Options
+export const paymentTermsOptions = [
+  { value: "Net 0", label: "Net 0 (Due on Receipt)" },
+  { value: "Net 3", label: "Net 3 Days" },
+  { value: "Net 5", label: "Net 5 Days" },
+  { value: "Net 7", label: "Net 7 Days" },
+  { value: "Net 10", label: "Net 10 Days" },
+  { value: "Net 15", label: "Net 15 Days" },
+  { value: "Net 21", label: "Net 21 Days" },
+  { value: "Net 30", label: "Net 30 Days" },
+  { value: "Net 45", label: "Net 45 Days" },
+  { value: "Net 60", label: "Net 60 Days" },
+  { value: "Due on Receipt", label: "Due on Receipt" },
+  { value: "Cash on Delivery", label: "Cash on Delivery" },
+  { value: "Advance", label: "Advance" },
+];

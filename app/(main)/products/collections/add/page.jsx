@@ -9,8 +9,10 @@ import { LuArrowLeft, LuSave, LuImage, LuX } from "react-icons/lu";
 import { Input } from "@/components/ui/input/Input";
 import { Button } from "@/components/ui/button/Button";
 import { Select } from "@/components/ui/select/Select";
+import { MultipleSearchSelect } from "@/components/ui/select/MultipleSearchSelect";
 import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useCreateProductCollectionMutation } from "@/features/products/productCollectionsApiSlice";
+import { useGetProductsIdNameQuery } from "@/features/products/productsApiSlice";
 import generateFormData from "@/utils/generateFormData";
 import { handleToast } from "@/utils/handleToast";
 import { cleanPayload } from "@/utils/cleanPayload";
@@ -35,11 +37,13 @@ export default function AddCollectionPage() {
   const router = useRouter();
   const [createCollection, { isLoading }] =
     useCreateProductCollectionMutation();
+  const { data: productsData } = useGetProductsIdNameQuery();
 
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
     description: "",
+    products: [],
     displayOrder: 0,
     image: null,
     startDate: "",
@@ -141,6 +145,9 @@ export default function AddCollectionPage() {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
     if (!formData.slug.trim()) newErrors.slug = "Slug is required";
+    if (!formData.products || formData.products.length === 0) {
+      newErrors.products = "At least one product is required";
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -156,6 +163,7 @@ export default function AddCollectionPage() {
       name: formData.name,
       slug: formData.slug,
       description: formData.description,
+      products: formData.products,
       displayOrder: formData.displayOrder,
       startDate: formData.startDate,
       endDate: formData.endDate,
@@ -238,6 +246,22 @@ export default function AddCollectionPage() {
                 value={formData.description}
                 onValueChange={(val) => handleInputChange("description", val)}
                 rows={4}
+              />
+            </div>
+
+            {/* Products Selection */}
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                Products
+              </h2>
+              <MultipleSearchSelect
+                label="Select Products"
+                options={productsData?.data || []}
+                value={formData.products}
+                onValueChange={(val) => handleInputChange("products", val)}
+                error={errors.products}
+                requiredSign={true}
+                placeholder="Select products for this collection"
               />
             </div>
 

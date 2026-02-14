@@ -23,6 +23,7 @@ const MultipleSearchSelect = forwardRef(
       defaultValue = [],
       optionRenderer,
       maxItems = Number.POSITIVE_INFINITY,
+      requiredSign = false,
       ...props
     },
     ref,
@@ -253,6 +254,7 @@ const MultipleSearchSelect = forwardRef(
         {label && (
           <label className="text-sm font-medium dark:font-normal text-gray-700 dark:text-gray-200 ">
             {label}
+            {requiredSign && <span className="text-red-500 ml-1">*</span>}
           </label>
         )}
 

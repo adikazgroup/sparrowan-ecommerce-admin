@@ -122,26 +122,35 @@ export default function BannersPage() {
             <p className="font-medium text-gray-800 dark:text-white">
               {row.title || "Untitled"}
             </p>
-            <p className="text-xs text-gray-500">Order: {row.displayOrder}</p>
           </div>
         </div>
       ),
     },
     {
-      id: "link",
-      header: "Link",
+      id: "displayOrder",
+      header: "Order",
       cell: (_, row) => (
-        <span
-          className="text-gray-600 dark:text-gray-400 text-sm max-w-[150px] truncate block"
-          title={row.link}
-        >
-          {row.link
-            ? row.link.length > 25
-              ? row.link.substring(0, 25) + "..."
-              : row.link
-            : "---"}
+        <span className="text-gray-600 dark:text-gray-400 font-medium">
+          {row.displayOrder}
         </span>
       ),
+    },
+    {
+      id: "link",
+      header: "Link",
+      cell: (_, row) =>
+        row.link ? (
+          <a
+            href={row.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline text-sm"
+          >
+            Visit Link
+          </a>
+        ) : (
+          <span className="text-gray-400 text-sm">---</span>
+        ),
     },
     {
       id: "status",
@@ -154,16 +163,18 @@ export default function BannersPage() {
       cell: (_, row) => (
         <div className="text-sm text-gray-500 dark:text-gray-400">
           {row.startDate || row.endDate ? (
-            <>
-              <p>
+            <div className="flex flex-col">
+              <span className="whitespace-nowrap">
+                Start:{" "}
                 {row.startDate ? moment(row.startDate).format("DD MMM") : "---"}
-              </p>
-              <p className="text-xs">
-                to {row.endDate ? moment(row.endDate).format("DD MMM") : "---"}
-              </p>
-            </>
+              </span>
+              <span className="whitespace-nowrap">
+                End:{" "}
+                {row.endDate ? moment(row.endDate).format("DD MMM") : "---"}
+              </span>
+            </div>
           ) : (
-            <span>Always</span>
+            <span>Always Active</span>
           )}
         </div>
       ),
