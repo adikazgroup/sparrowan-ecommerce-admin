@@ -1,26 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import moment from "moment";
 import { toast } from "react-hot-toast";
 import {
   LuArrowLeft,
   LuPackage,
   LuMapPin,
-  LuCreditCard,
   LuUser,
   LuPhone,
   LuMail,
   LuSave,
-  LuXCircle,
+  LuX,
   LuRotateCcw,
+  LuWallet,
+  LuTrendingUp,
+  LuTrendingDown,
 } from "react-icons/lu";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button/Button";
 import { Select } from "@/components/ui/select/Select";
-import { Input } from "@/components/ui/input/Input";
 import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useModal } from "@/lib/useModal";
 import { Modal } from "@/components/ui/modal/Modal";
@@ -36,7 +37,6 @@ import { handleToast } from "@/utils/handleToast";
 const statusOptions = [
   { value: "pending", label: "Pending" },
   { value: "confirmed", label: "Confirmed" },
-  { value: "processing", label: "Processing" },
   { value: "shipped", label: "Shipped" },
   { value: "delivered", label: "Delivered" },
 ];
@@ -48,9 +48,14 @@ const returnStatusOptions = [
   { value: "completed", label: "Completed" },
 ];
 
+const orderTypeLabels = {
+  cod: "Cash on Delivery",
+  pickup: "Pickup",
+  "online-payment": "Online Payment",
+};
+
 export default function OrderDetailsPage() {
   const params = useParams();
-  const router = useRouter();
   const orderId = params.id;
 
   const [updateStatus, { isLoading: updateLoading }] =
@@ -74,23 +79,18 @@ export default function OrderDetailsPage() {
       toast.error("Please select a status");
       return;
     }
-
     const result = await updateStatus({
       id: orderId,
       status: statusData.status,
       notes: statusData.notes || undefined,
     });
-
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "update-status",
       message: "Order status updated!",
     });
-
-    if (result?.data) {
-      setStatusData({ status: "", notes: "" });
-    }
+    if (result?.data) setStatusData({ status: "", notes: "" });
   };
 
   const handleCancelOrder = async () => {
@@ -98,16 +98,13 @@ export default function OrderDetailsPage() {
       toast.error("Please provide a cancellation reason");
       return;
     }
-
     const result = await cancelOrder({ id: orderId, reason: cancelReason });
-
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "cancel-order",
       message: "Order cancelled!",
     });
-
     if (result?.data) {
       cancelModal.close();
       setCancelReason("");
@@ -119,16 +116,13 @@ export default function OrderDetailsPage() {
       toast.error("Please select a return status");
       return;
     }
-
     const result = await processReturn({ id: orderId, status: returnStatus });
-
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "process-return",
       message: "Return processed!",
     });
-
     if (result?.data) {
       returnModal.close();
       setReturnStatus("");
@@ -145,6 +139,9 @@ export default function OrderDetailsPage() {
         </div>
       </div>
     );
+
+  const profit = order?.totalProfit || 0;
+  const isProfitable = profit >= 0;
 
   return (
     <div className="bg-white dark:bg-[#010611] minBody p-5 rounded-xl space-y-6">
@@ -207,18 +204,25 @@ export default function OrderDetailsPage() {
                     <p className="font-medium text-gray-800 dark:text-white">
                       {item.name}
                     </p>
-                    <p className="text-xs text-gray-500">SKU: {item.sku}</p>
+                    {item.sku && (
+                      <p className="text-xs text-gray-500">SKU: {item.sku}</p>
+                    )}
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      ৳{item.unitPrice.toFixed(2)} × {item.quantity}
+                      ৳{item.unitPrice?.toFixed(2)} × {item.quantity}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-gray-800 dark:text-white">
-                      ৳{item.subtotal.toFixed(2)}
+                      ৳{item.subtotal?.toFixed(2)}
                     </p>
                     {item.discount > 0 && (
                       <p className="text-xs text-green-600">
                         -৳{(item.discount * item.quantity).toFixed(2)}
+                      </p>
+                    )}
+                    {item.unitCost > 0 && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Cost: ৳{item.unitCost?.toFixed(2)}
                       </p>
                     )}
                   </div>
@@ -300,7 +304,7 @@ export default function OrderDetailsPage() {
           </div>
         </div>
 
-        {/* Right Column - Status & Actions */}
+        {/* Right Column */}
         <div className="space-y-6">
           {/* Update Status */}
           {order?.status !== "cancelled" && order?.status !== "delivered" && (
@@ -338,29 +342,65 @@ export default function OrderDetailsPage() {
             </div>
           )}
 
-          {/* Payment Info */}
+          {/* Order Type Info */}
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
             <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4 flex items-center gap-2">
-              <LuCreditCard className="size-4" />
-              Payment Info
+              <LuWallet className="size-4" />
+              Order Info
             </h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Method</span>
-                <span className="font-medium text-gray-800 dark:text-white capitalize">
-                  {order?.paymentMethod === "cashOnDelivery"
-                    ? "Cash on Delivery"
-                    : order?.paymentMethod}
+                <span className="text-gray-600 dark:text-gray-400">
+                  Order Type
                 </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Source</span>
                 <span className="font-medium text-gray-800 dark:text-white capitalize">
-                  {order?.source || "Web"}
+                  {orderTypeLabels[order?.orderType] || order?.orderType}
                 </span>
               </div>
             </div>
           </div>
+
+          {/* Cost & Profit */}
+          {(order?.totalCost > 0 || order?.totalProfit !== undefined) && (
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4 flex items-center gap-2">
+                {isProfitable ? (
+                  <LuTrendingUp className="size-4 text-green-500" />
+                ) : (
+                  <LuTrendingDown className="size-4 text-red-500" />
+                )}
+                Cost & Profit
+              </h2>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Total Revenue
+                  </span>
+                  <span className="font-medium text-gray-800 dark:text-white">
+                    ৳{order?.total?.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Total Cost (FIFO)
+                  </span>
+                  <span className="font-medium text-gray-800 dark:text-white">
+                    ৳{(order?.totalCost || 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    Profit
+                  </span>
+                  <span
+                    className={`font-semibold ${isProfitable ? "text-green-600" : "text-red-600"}`}
+                  >
+                    {isProfitable ? "+" : ""}৳{profit.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Customer Info */}
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
@@ -385,7 +425,7 @@ export default function OrderDetailsPage() {
             </div>
           </div>
 
-          {/* Order Timeline */}
+          {/* Timeline */}
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
             <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">
               Timeline
@@ -436,7 +476,7 @@ export default function OrderDetailsPage() {
                   onClick={cancelModal.open}
                   className="w-full"
                 >
-                  <LuXCircle className="size-4" />
+                  <LuX className="size-4" />
                   Cancel Order
                 </Button>
               )}

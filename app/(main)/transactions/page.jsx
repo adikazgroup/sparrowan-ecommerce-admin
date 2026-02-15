@@ -6,14 +6,14 @@ import moment from "moment";
 import { toast } from "react-hot-toast";
 import {
   LuEye,
-  LuCreditCard,
   LuRefreshCw,
   LuSearch,
   LuX,
   LuCheck,
-  LuXCircle,
   LuRotateCcw,
+  LuCreditCard,
   LuDollarSign,
+  LuWallet,
 } from "react-icons/lu";
 
 import { useModal } from "@/lib/useModal";
@@ -26,10 +26,10 @@ import { Textarea } from "@/components/ui/textarea/Textarea";
 import { TableSkeleton } from "@/components/skeleton/TableSkeleton";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
 import {
-  useGetPaymentListQuery,
+  useGetTransactionListQuery,
   useProcessRefundMutation,
   useMarkCODCollectedMutation,
-} from "@/features/payments/paymentsApiSlice";
+} from "@/features/transactions/transactionsApiSlice";
 import { handleToast } from "@/utils/handleToast";
 
 const statusFilterOptions = [
@@ -39,6 +39,12 @@ const statusFilterOptions = [
   { value: "failed", label: "Failed" },
   { value: "cancelled", label: "Cancelled" },
   { value: "refunded", label: "Refunded" },
+];
+
+const methodFilterOptions = [
+  { value: "", label: "All Methods" },
+  { value: "cod", label: "Cash on Delivery" },
+  { value: "sslcommerz", label: "SSLCommerz" },
 ];
 
 const statusConfig = {
@@ -53,11 +59,11 @@ const statusConfig = {
       "text-green-600 bg-green-100/50 dark:text-green-300 dark:bg-green-900/30",
   },
   failed: {
-    icon: LuXCircle,
+    icon: LuX,
     color: "text-red-600 bg-red-100/50 dark:text-red-300 dark:bg-red-900/30",
   },
   cancelled: {
-    icon: LuXCircle,
+    icon: LuX,
     color:
       "text-gray-600 bg-gray-100/50 dark:text-gray-300 dark:bg-gray-900/30",
   },
@@ -68,7 +74,22 @@ const statusConfig = {
   },
 };
 
-export default function PaymentsPage() {
+const methodConfig = {
+  cod: {
+    icon: LuWallet,
+    label: "COD",
+    color:
+      "text-amber-700 bg-amber-100/60 dark:text-amber-300 dark:bg-amber-900/30",
+  },
+  sslcommerz: {
+    icon: LuCreditCard,
+    label: "SSLCommerz",
+    color:
+      "text-emerald-700 bg-emerald-100/60 dark:text-emerald-300 dark:bg-emerald-900/30",
+  },
+};
+
+export default function TransactionsPage() {
   const [processRefund, { isLoading: refundLoading }] =
     useProcessRefundMutation();
   const [markCODCollected, { isLoading: codLoading }] =
@@ -77,14 +98,19 @@ export default function PaymentsPage() {
   const refundModal = useModal();
   const [selectedItem, setSelectedItem] = useState(null);
   const [refundData, setRefundData] = useState({ reason: "", amount: "" });
-  const [filterData, setFilterData] = useState({ searchTerm: "", status: "" });
+  const [filterData, setFilterData] = useState({
+    searchTerm: "",
+    status: "",
+    method: "",
+  });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
-  const { data, isLoading, isError, refetch } = useGetPaymentListQuery({
+  const { data, isLoading, isError, refetch } = useGetTransactionListQuery({
     searchTerm: filterData.searchTerm || undefined,
     status: filterData.status || undefined,
+    method: filterData.method || undefined,
     page,
     limit,
   });
@@ -107,7 +133,6 @@ export default function PaymentsPage() {
       toast.error("Please provide a refund reason");
       return;
     }
-
     const result = await processRefund({
       id: selectedItem._id,
       reason: refundData.reason,
@@ -115,14 +140,12 @@ export default function PaymentsPage() {
         ? parseFloat(refundData.amount)
         : undefined,
     });
-
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "process-refund",
       message: "Refund processed!",
     });
-
     if (result?.data) {
       refundModal.close();
       setRefundData({ reason: "", amount: "" });
@@ -130,9 +153,8 @@ export default function PaymentsPage() {
     }
   };
 
-  const handleMarkCOD = async (payment) => {
-    const result = await markCODCollected(payment._id);
-
+  const handleMarkCOD = async (txn) => {
+    const result = await markCODCollected(txn._id);
     handleToast({
       result,
       type: result?.data ? "success" : "error",
@@ -146,9 +168,12 @@ export default function PaymentsPage() {
       id: "transactionId",
       header: "Transaction ID",
       cell: (_, row) => (
-        <span className="font-mono text-sm text-gray-800 dark:text-white">
-          {row.transactionId || "---"}
-        </span>
+        <Link
+          href={`/transactions/${row._id}`}
+          className="font-mono text-sm font-semibold text-primary hover:underline"
+        >
+          {row.transactionId || row._id?.slice(-8) || "---"}
+        </Link>
       ),
     },
     {
@@ -168,18 +193,25 @@ export default function PaymentsPage() {
       header: "Amount",
       cell: (_, row) => (
         <span className="font-semibold text-gray-800 dark:text-white">
-          ৳{(row.amount || 0).toFixed(2)}
+          ৳{(row.amount || 0).toLocaleString("en-BD")}
         </span>
       ),
     },
     {
       id: "method",
       header: "Method",
-      cell: (_, row) => (
-        <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 capitalize">
-          {row.method === "cashOnDelivery" ? "COD" : row.method}
-        </span>
-      ),
+      cell: (_, row) => {
+        const config = methodConfig[row.method] || methodConfig.cod;
+        const Icon = config.icon;
+        return (
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.color}`}
+          >
+            <Icon className="size-3.5" />
+            {config.label}
+          </span>
+        );
+      },
     },
     {
       id: "status",
@@ -216,6 +248,13 @@ export default function PaymentsPage() {
       header: "Actions",
       cell: (_, row) => (
         <div className="flex justify-end gap-1">
+          <Link
+            href={`/transactions/${row._id}`}
+            className="size-8 center text-blue-600 bg-blue-100/50 rounded dark:text-blue-300 dark:bg-blue-900/30"
+            title="View Details"
+          >
+            <LuEye className="size-4" />
+          </Link>
           {row.status === "paid" && (
             <button
               onClick={(e) => {
@@ -229,12 +268,13 @@ export default function PaymentsPage() {
               <LuRotateCcw className="size-4" />
             </button>
           )}
-          {row.method === "cashOnDelivery" && row.status === "pending" && (
+          {row.method === "cod" && row.status === "pending" && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleMarkCOD(row);
               }}
+              disabled={codLoading}
               className="size-8 center text-green-600 bg-green-100/50 rounded dark:text-green-300 dark:bg-green-900/30"
               title="Mark as Collected"
             >
@@ -256,10 +296,13 @@ export default function PaymentsPage() {
         <>
           <div className="flex flex-col gap-4">
             <div className="flex sm:flex-row flex-col sm:items-center justify-between gap-4">
-              <h1 className="text-xl font-medium">Payments</h1>
+              <h1 className="text-xl font-medium">Transactions</h1>
+              <p className="text-sm text-gray-500">
+                {totalData} total transaction(s)
+              </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
               <Input
                 placeholder="Search by transaction ID, order..."
                 value={filterData.searchTerm}
@@ -289,6 +332,15 @@ export default function PaymentsPage() {
                 }
                 placeholder="Filter by Status"
                 className="w-full sm:w-40"
+              />
+              <Select
+                options={methodFilterOptions}
+                value={filterData.method}
+                onValueChange={(value) =>
+                  setFilterData((prev) => ({ ...prev, method: value }))
+                }
+                placeholder="Filter by Method"
+                className="w-full sm:w-44"
               />
               <button
                 onClick={handleRefresh}

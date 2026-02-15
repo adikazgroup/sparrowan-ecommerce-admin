@@ -161,7 +161,38 @@ export const menuItems = [
     ],
   },
 
-  /* 7) MARKETING */
+  /* 7) ORDER MANAGEMENT */
+  {
+    id: 9,
+    name: "Order Management",
+    key: "order-management",
+    icon: "hugeicons:shopping-cart-01",
+    items: [
+      {
+        parentId: 9,
+        subId: 91,
+        subIcon: "hugeicons:package-01",
+        subName: "Orders",
+        subPath: "/orders",
+      },
+      {
+        parentId: 9,
+        subId: 92,
+        subIcon: "hugeicons:credit-card",
+        subName: "Transactions",
+        subPath: "/transactions",
+      },
+      {
+        parentId: 9,
+        subId: 93,
+        subIcon: "hugeicons:truck-delivery",
+        subName: "Shipments",
+        subPath: "/shipments",
+      },
+    ],
+  },
+
+  /* 8) MARKETING */
   {
     id: 7,
     name: "Marketing",

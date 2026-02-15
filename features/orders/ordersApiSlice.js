@@ -15,6 +15,10 @@ const ordersApiSlice = apiSlice.injectEndpoints({
       query: () => ({ url: `/admin/orders/stats` }),
       providesTags: ["orders"],
     }),
+    getOrderIdAndNumberList: builder.query({
+      query: () => ({ url: `/admin/orders/id-and-number-list` }),
+      providesTags: ["orders"],
+    }),
     updateOrderStatus: builder.mutation({
       query: ({ id, status, notes }) => ({
         url: `/admin/orders/${id}/status`,
@@ -50,6 +54,7 @@ export const {
   useGetOrderListQuery,
   useGetSingleOrderQuery,
   useGetOrderStatsQuery,
+  useGetOrderIdAndNumberListQuery,
   useUpdateOrderStatusMutation,
   useCancelOrderMutation,
   useProcessReturnMutation,
