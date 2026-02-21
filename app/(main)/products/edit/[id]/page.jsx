@@ -103,8 +103,8 @@ export default function EditProductPage() {
     subCategory: "",
     childCategory: "",
     taxCategory: "",
-    shortDescription: "",
     description: "",
+    details: "",
     seo: { metaTitle: "", metaDescription: "" },
     status: "active",
   });
@@ -170,8 +170,8 @@ export default function EditProductPage() {
           lowStockThreshold:
             dv?.inventory?.lowStockThreshold?.toString() || "10",
         },
-        shortDescription: product.shortDescription || "",
         description: product.description || "",
+        details: product.details || "",
         seo: {
           metaTitle: product.seo?.metaTitle || "",
           metaDescription: product.seo?.metaDescription || "",
@@ -485,8 +485,8 @@ export default function EditProductPage() {
         specifications.filter((s) => s.key && s.value).length > 0
           ? specifications.filter((s) => s.key && s.value)
           : undefined,
-      shortDescription: formData.shortDescription || undefined,
       description: formData.description || undefined,
+      details: formData.details || undefined,
       seo:
         formData.seo.metaTitle || formData.seo.metaDescription
           ? formData.seo
@@ -1164,20 +1164,18 @@ export default function EditProductPage() {
                 Description
               </h2>
               <Textarea
-                label="Short Description"
-                placeholder="Brief product description..."
-                value={formData.shortDescription}
-                onValueChange={(val) =>
-                  handleInputChange("shortDescription", val)
-                }
+                label="Description"
+                placeholder="Brief product summary (max 500 characters)"
+                value={formData.description}
+                onValueChange={(val) => handleInputChange("description", val)}
                 rows={2}
                 maxLength={500}
               />
               <Textarea
-                label="Full Description"
-                placeholder="Detailed product description..."
-                value={formData.description}
-                onValueChange={(val) => handleInputChange("description", val)}
+                label="Details"
+                placeholder="Full product details..."
+                value={formData.details}
+                onValueChange={(val) => handleInputChange("details", val)}
                 rows={5}
               />
             </div>

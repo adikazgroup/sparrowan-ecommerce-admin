@@ -238,21 +238,21 @@ export const menuItems = [
   },
 
   /* 8) SETTINGS */
-  {
-    id: 8,
-    name: "Settings",
-    key: "settings",
-    icon: "hugeicons:settings-01",
-    items: [
-      {
-        parentId: 8,
-        subId: 81,
-        subIcon: "hugeicons:truck-delivery",
-        subName: "Shipping Zones",
-        subPath: "/shipping-zones",
-      },
-    ],
-  },
+  // {
+  //   id: 8,
+  //   name: "Settings",
+  //   key: "settings",
+  //   icon: "hugeicons:settings-01",
+  //   items: [
+  //     {
+  //       parentId: 8,
+  //       subId: 81,
+  //       subIcon: "hugeicons:truck-delivery",
+  //       subName: "Shipping Zones",
+  //       subPath: "/shipping-zones",
+  //     },
+  //   ],
+  // },
 ];
 
 // User Role Options (must match server USER_ROLE)
