@@ -51,7 +51,8 @@ const createEmptyVariant = () => ({
     sellingPrice: "",
     discount: { type: "", value: "" },
   },
-  inventory: { stock: "0", lowStockThreshold: "10" },
+  // stock intentionally omitted — managed via PurchaseOrder only
+  inventory: { lowStockThreshold: "10" },
   dimensions: { length: "", width: "", height: "", unit: "cm" },
   weight: "",
   image: null,
@@ -400,8 +401,8 @@ export default function AddProductPage() {
               }
             : undefined,
         },
+        // stock intentionally omitted — managed via PurchaseOrder only
         inventory: {
-          stock: 0, // Always 0 - managed via Purchase Orders
           lowStockThreshold: parseInt(v.inventory.lowStockThreshold) || 10,
         },
         dimensions:

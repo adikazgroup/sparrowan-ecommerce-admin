@@ -49,6 +49,8 @@ export default function ProductCollectionsPage() {
       status: filterData.status || undefined,
       page,
       limit,
+      sortBy: "displayOrder",
+      sortOrder: "1",
     });
 
   const items = data?.data || [];
