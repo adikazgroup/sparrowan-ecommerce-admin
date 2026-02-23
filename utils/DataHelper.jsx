@@ -237,7 +237,16 @@ export const menuItems = [
     ],
   },
 
-  /* 8) SETTINGS */
+  /* 9) CONTACTS */
+  {
+    id: 10,
+    name: "Contacts",
+    key: "contacts",
+    icon: "hugeicons:message-01",
+    path: "/contact",
+  },
+
+  /* 10) SETTINGS */
   // {
   //   id: 8,
   //   name: "Settings",
