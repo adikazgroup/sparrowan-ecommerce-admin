@@ -20,10 +20,15 @@ const transactionsApiSlice = apiSlice.injectEndpoints({
       providesTags: ["transactions"],
     }),
     processRefund: builder.mutation({
-      query: ({ id, reason, refundAmount }) => ({
+      query: ({ id, reason, refundAmount, refundMethod, refundNote }) => ({
         url: `/admin/transactions/${id}/refund`,
         method: "POST",
-        body: { reason, refundAmount },
+        body: {
+          reason,
+          ...(refundAmount !== undefined && { refundAmount }),
+          ...(refundMethod && { refundMethod }),
+          ...(refundNote && { refundNote }),
+        },
       }),
       invalidatesTags: ["transactions", "orders"],
     }),

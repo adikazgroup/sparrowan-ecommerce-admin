@@ -15,6 +15,8 @@ import {
   LuShoppingBag,
   LuWallet,
   LuMapPin,
+  LuDollarSign,
+  LuBarChart2,
 } from "react-icons/lu";
 
 import { Table } from "@/components/ui/table/Table";
@@ -22,7 +24,10 @@ import { Input } from "@/components/ui/input/Input";
 import { Select } from "@/components/ui/select/Select";
 import { TableSkeleton } from "@/components/skeleton/TableSkeleton";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
-import { useGetOrderListQuery } from "@/features/orders/ordersApiSlice";
+import {
+  useGetOrderListQuery,
+  useGetOrderStatsQuery,
+} from "@/features/orders/ordersApiSlice";
 
 const statusFilterOptions = [
   { value: "", label: "All Status" },
@@ -111,6 +116,17 @@ export default function OrdersPage() {
     page,
     limit,
   });
+
+  const { data: statsData } = useGetOrderStatsQuery();
+  const rawStats = statsData?.data?.byStatus || [];
+  const getStatByStatus = (s) =>
+    rawStats.find((x) => x._id === s) || { count: 0, totalAmount: 0 };
+  const pendingCount =
+    getStatByStatus("pending").count + getStatByStatus("pending_payment").count;
+  const confirmedCount = getStatByStatus("confirmed").count;
+  const deliveredCount = getStatByStatus("delivered").count;
+  const todayOrders = statsData?.data?.todayOrders || 0;
+  const todayRevenue = statsData?.data?.todayRevenue || 0;
 
   const items = data?.data || [];
   const totalData = data?.meta?.total || 0;
@@ -234,6 +250,53 @@ export default function OrdersPage() {
 
   return (
     <div className="bg-white dark:bg-[#010611] minBody p-5 rounded-xl space-y-5">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/30">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">
+              Today Orders
+            </p>
+            <LuShoppingBag className="size-4 text-blue-500" />
+          </div>
+          <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+            {todayOrders}
+          </p>
+        </div>
+        <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-100 dark:border-green-800/30">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-green-600 dark:text-green-400 font-medium uppercase tracking-wide">
+              Today Revenue
+            </p>
+            <LuDollarSign className="size-4 text-green-500" />
+          </div>
+          <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+            ৳{todayRevenue.toLocaleString("en-BD")}
+          </p>
+        </div>
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 border border-yellow-100 dark:border-yellow-800/30">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium uppercase tracking-wide">
+              Pending
+            </p>
+            <LuClock className="size-4 text-yellow-500" />
+          </div>
+          <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
+            {pendingCount}
+          </p>
+        </div>
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 border border-emerald-100 dark:border-emerald-800/30">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wide">
+              Delivered
+            </p>
+            <LuCheck className="size-4 text-emerald-500" />
+          </div>
+          <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+            {deliveredCount}
+          </p>
+        </div>
+      </div>
       {isError ? (
         <ErrorBoundaryFetcher />
       ) : isLoading ? (

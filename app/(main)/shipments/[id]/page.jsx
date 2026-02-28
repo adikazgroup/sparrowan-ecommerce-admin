@@ -18,10 +18,12 @@ import {
   LuClock,
   LuX,
   LuDollarSign,
+  LuWarehouse,
 } from "react-icons/lu";
 
 import { Button } from "@/components/ui/button/Button";
 import { Select } from "@/components/ui/select/Select";
+import { Textarea } from "@/components/ui/textarea/Textarea";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
 import {
   useGetSingleShipmentQuery,
@@ -31,22 +33,28 @@ import { handleToast } from "@/utils/handleToast";
 
 const deliveryStatusOptions = [
   { value: "pending", label: "Pending" },
-  { value: "picked", label: "Picked Up" },
-  { value: "in_transit", label: "In Transit" },
+  { value: "picked-up", label: "Picked Up" },
+  { value: "in-transit", label: "In Transit" },
+  { value: "hub", label: "Hub" },
+  { value: "out-for-delivery", label: "Out for Delivery" },
   { value: "delivered", label: "Delivered" },
-  { value: "returned", label: "Returned" },
+  { value: "return-to-sender", label: "Return to Sender" },
   { value: "cancelled", label: "Cancelled" },
 ];
 
 const statusColors = {
   pending:
     "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
-  picked: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
-  in_transit:
+  "picked-up":
+    "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
+  "in-transit":
     "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300",
+  hub: "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300",
+  "out-for-delivery":
+    "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-300",
   delivered:
     "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
-  returned:
+  "return-to-sender":
     "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300",
   cancelled: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
 };
@@ -59,10 +67,12 @@ const courierLabels = {
 
 const timelineIcons = {
   pending: { icon: LuClock, color: "bg-yellow-500" },
-  picked: { icon: LuPackage, color: "bg-blue-500" },
-  in_transit: { icon: LuTruck, color: "bg-indigo-500" },
+  "picked-up": { icon: LuPackage, color: "bg-blue-500" },
+  "in-transit": { icon: LuTruck, color: "bg-indigo-500" },
+  hub: { icon: LuWarehouse, color: "bg-purple-500" },
+  "out-for-delivery": { icon: LuTruck, color: "bg-cyan-500" },
   delivered: { icon: LuCheck, color: "bg-green-500" },
-  returned: { icon: LuMapPin, color: "bg-orange-500" },
+  "return-to-sender": { icon: LuMapPin, color: "bg-orange-500" },
   cancelled: { icon: LuX, color: "bg-red-500" },
 };
 
@@ -73,6 +83,7 @@ export default function ShipmentDetailsPage() {
   const [updateTracking, { isLoading: updateLoading }] =
     useUpdateTrackingStatusMutation();
   const [newStatus, setNewStatus] = useState("");
+  const [newNote, setNewNote] = useState("");
 
   const { data, isLoading, isError } = useGetSingleShipmentQuery(shipmentId);
   const shipment = data?.data;
@@ -84,7 +95,8 @@ export default function ShipmentDetailsPage() {
     }
     const result = await updateTracking({
       id: shipmentId,
-      deliveryStatus: newStatus,
+      status: newStatus,
+      ...(newNote.trim() && { note: newNote.trim() }),
     });
     handleToast({
       result,
@@ -92,7 +104,10 @@ export default function ShipmentDetailsPage() {
       id: "update-tracking",
       message: "Tracking status updated!",
     });
-    if (result?.data) setNewStatus("");
+    if (result?.data) {
+      setNewStatus("");
+      setNewNote("");
+    }
   };
 
   if (isError) return <ErrorBoundaryFetcher />;
@@ -127,7 +142,7 @@ export default function ShipmentDetailsPage() {
         <span
           className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize ${statusColors[shipment?.deliveryStatus] || statusColors.pending}`}
         >
-          {(shipment?.deliveryStatus || "pending").replace("_", " ")}
+          {(shipment?.deliveryStatus || "pending").replace(/-/g, " ")}
         </span>
       </div>
 
@@ -240,13 +255,13 @@ export default function ShipmentDetailsPage() {
           </div>
 
           {/* Tracking Events */}
-          {shipment?.trackingEvents?.length > 0 && (
+          {shipment?.events?.length > 0 && (
             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">
                 Tracking History
               </h2>
               <div className="space-y-4">
-                {shipment.trackingEvents.map((event, index) => {
+                {shipment.events.map((event, index) => {
                   const statusInfo =
                     timelineIcons[event.status] || timelineIcons.pending;
                   const EventIcon = statusInfo.icon;
@@ -255,7 +270,7 @@ export default function ShipmentDetailsPage() {
                       key={index}
                       className="flex items-start gap-3 relative"
                     >
-                      {index < shipment.trackingEvents.length - 1 && (
+                      {index < shipment.events.length - 1 && (
                         <div className="absolute left-[11px] top-7 w-0.5 h-[calc(100%+4px)] bg-gray-200 dark:bg-gray-700" />
                       )}
                       <div
@@ -265,7 +280,7 @@ export default function ShipmentDetailsPage() {
                       </div>
                       <div className="flex-1 pb-1">
                         <p className="font-medium text-gray-800 dark:text-white capitalize text-sm">
-                          {(event.status || "").replace("_", " ")}
+                          {(event.status || "").replace(/-/g, " ")}
                         </p>
                         {event.note && (
                           <p className="text-xs text-gray-500 mt-0.5">
@@ -273,9 +288,7 @@ export default function ShipmentDetailsPage() {
                           </p>
                         )}
                         <p className="text-xs text-gray-400 mt-1">
-                          {moment(event.timestamp || event.createdAt).format(
-                            "DD MMM YYYY, hh:mm A",
-                          )}
+                          {moment(event.time).format("DD MMM YYYY, hh:mm A")}
                         </p>
                       </div>
                     </div>
@@ -290,7 +303,8 @@ export default function ShipmentDetailsPage() {
         <div className="space-y-6">
           {/* Update Status */}
           {shipment?.deliveryStatus !== "delivered" &&
-            shipment?.deliveryStatus !== "cancelled" && (
+            shipment?.deliveryStatus !== "cancelled" &&
+            shipment?.deliveryStatus !== "return-to-sender" && (
               <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
                 <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">
                   Update Status
@@ -301,6 +315,13 @@ export default function ShipmentDetailsPage() {
                     options={deliveryStatusOptions}
                     value={newStatus}
                     onValueChange={setNewStatus}
+                  />
+                  <Textarea
+                    label="Note (Optional)"
+                    placeholder="Add tracking note..."
+                    value={newNote}
+                    onValueChange={setNewNote}
+                    rows={2}
                   />
                   <Button
                     onClick={handleUpdateStatus}

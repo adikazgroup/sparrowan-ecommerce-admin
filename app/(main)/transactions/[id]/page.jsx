@@ -20,6 +20,7 @@ import {
 
 import { Button } from "@/components/ui/button/Button";
 import { Input } from "@/components/ui/input/Input";
+import { Select } from "@/components/ui/select/Select";
 import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useModal } from "@/lib/useModal";
 import { Modal } from "@/components/ui/modal/Modal";
@@ -30,6 +31,15 @@ import {
   useMarkCODCollectedMutation,
 } from "@/features/transactions/transactionsApiSlice";
 import { handleToast } from "@/utils/handleToast";
+
+const refundMethodOptions = [
+  { value: "", label: "Select Method" },
+  { value: "bkash", label: "bKash" },
+  { value: "nagad", label: "Nagad" },
+  { value: "bank-transfer", label: "Bank Transfer" },
+  { value: "cash", label: "Cash" },
+  { value: "sslcommerz-reverse", label: "SSLCommerz Reverse" },
+];
 
 const statusColors = {
   pending:
@@ -50,7 +60,12 @@ export default function TransactionDetailsPage() {
   const [markCODCollected, { isLoading: codLoading }] =
     useMarkCODCollectedMutation();
   const refundModal = useModal();
-  const [refundData, setRefundData] = useState({ reason: "", amount: "" });
+  const [refundData, setRefundData] = useState({
+    reason: "",
+    amount: "",
+    refundMethod: "",
+    refundNote: "",
+  });
 
   const { data, isLoading, isError } = useGetSingleTransactionQuery(txnId);
   const txn = data?.data;
@@ -66,6 +81,8 @@ export default function TransactionDetailsPage() {
       refundAmount: refundData.amount
         ? parseFloat(refundData.amount)
         : undefined,
+      refundMethod: refundData.refundMethod || undefined,
+      refundNote: refundData.refundNote || undefined,
     });
     handleToast({
       result,
@@ -75,7 +92,12 @@ export default function TransactionDetailsPage() {
     });
     if (result?.data) {
       refundModal.close();
-      setRefundData({ reason: "", amount: "" });
+      setRefundData({
+        reason: "",
+        amount: "",
+        refundMethod: "",
+        refundNote: "",
+      });
     }
   };
 
@@ -156,7 +178,9 @@ export default function TransactionDetailsPage() {
                   <LuWallet className="size-3.5" /> Method
                 </p>
                 <p className="font-medium text-gray-800 dark:text-white capitalize">
-                  {txn?.method === "cod" ? "Cash on Delivery" : txn?.method}
+                  {txn?.method === "cash-on-delivery"
+                    ? "Cash on Delivery"
+                    : txn?.method}
                 </p>
               </div>
               <div className="space-y-1">
@@ -203,42 +227,42 @@ export default function TransactionDetailsPage() {
             )}
           </div>
 
-          {/* SSL Response (if SSLCommerz) */}
-          {txn?.method === "sslcommerz" && txn?.sslResponse && (
+          {/* Gateway Response (if SSLCommerz) */}
+          {txn?.method === "sslcommerz" && txn?.gatewayResponse && (
             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">
                 SSLCommerz Response
               </h2>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                {txn.sslResponse.bank_tran_id && (
+                {txn.gatewayResponse.bank_tran_id && (
                   <div>
                     <p className="text-gray-500">Bank Txn ID</p>
                     <p className="font-mono text-gray-800 dark:text-white">
-                      {txn.sslResponse.bank_tran_id}
+                      {txn.gatewayResponse.bank_tran_id}
                     </p>
                   </div>
                 )}
-                {txn.sslResponse.card_type && (
+                {txn.gatewayResponse.card_type && (
                   <div>
                     <p className="text-gray-500">Card Type</p>
                     <p className="text-gray-800 dark:text-white">
-                      {txn.sslResponse.card_type}
+                      {txn.gatewayResponse.card_type}
                     </p>
                   </div>
                 )}
-                {txn.sslResponse.card_issuer && (
+                {txn.gatewayResponse.card_issuer && (
                   <div>
                     <p className="text-gray-500">Card Issuer</p>
                     <p className="text-gray-800 dark:text-white">
-                      {txn.sslResponse.card_issuer}
+                      {txn.gatewayResponse.card_issuer}
                     </p>
                   </div>
                 )}
-                {txn.sslResponse.tran_date && (
+                {txn.gatewayResponse.tran_date && (
                   <div>
                     <p className="text-gray-500">SSL Transaction Date</p>
                     <p className="text-gray-800 dark:text-white">
-                      {txn.sslResponse.tran_date}
+                      {txn.gatewayResponse.tran_date}
                     </p>
                   </div>
                 )}
@@ -247,7 +271,7 @@ export default function TransactionDetailsPage() {
           )}
 
           {/* Refund Info */}
-          {txn?.refund && (
+          {txn?.status === "refunded" && (
             <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-5 border border-orange-200 dark:border-orange-800/30">
               <h2 className="text-sm font-medium text-orange-700 dark:text-orange-300 uppercase tracking-wide mb-4 flex items-center gap-2">
                 <LuRotateCcw className="size-4" />
@@ -259,7 +283,7 @@ export default function TransactionDetailsPage() {
                     Refund Amount
                   </span>
                   <span className="font-semibold text-orange-700 dark:text-orange-300">
-                    ৳{(txn.refund.amount || 0).toFixed(2)}
+                    ৳{(txn.refundAmount || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -267,21 +291,69 @@ export default function TransactionDetailsPage() {
                     Reason
                   </span>
                   <span className="text-gray-800 dark:text-white">
-                    {txn.refund.reason}
+                    {txn.refundReason}
                   </span>
                 </div>
-                {txn.refund.processedAt && (
+                {txn.refundMethod && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Method
+                    </span>
+                    <span className="text-gray-800 dark:text-white capitalize">
+                      {txn.refundMethod}
+                    </span>
+                  </div>
+                )}
+                {txn.refundNote && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Note
+                    </span>
+                    <span className="text-gray-800 dark:text-white">
+                      {txn.refundNote}
+                    </span>
+                  </div>
+                )}
+                {txn.refundedAt && (
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">
                       Processed At
                     </span>
                     <span className="text-gray-800 dark:text-white">
-                      {moment(txn.refund.processedAt).format(
-                        "DD MMM YYYY, hh:mm A",
-                      )}
+                      {moment(txn.refundedAt).format("DD MMM YYYY, hh:mm A")}
                     </span>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Failure Info */}
+          {txn?.status === "failed" && txn?.failedAt && (
+            <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-5 border border-red-200 dark:border-red-800/30">
+              <h2 className="text-sm font-medium text-red-700 dark:text-red-300 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <LuX className="size-4" />
+                Failure Details
+              </h2>
+              <div className="space-y-2 text-sm">
+                {txn.failureReason && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Reason
+                    </span>
+                    <span className="text-gray-800 dark:text-white">
+                      {txn.failureReason}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Failed At
+                  </span>
+                  <span className="text-gray-800 dark:text-white">
+                    {moment(txn.failedAt).format("DD MMM YYYY, hh:mm A")}
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -304,18 +376,21 @@ export default function TransactionDetailsPage() {
                 Process Refund
               </Button>
             )}
-            {txn?.method === "cod" && txn?.status === "pending" && (
-              <Button
-                onClick={handleMarkCOD}
-                disabled={codLoading}
-                className="w-full"
-              >
-                <LuCheck className="size-4" />
-                {codLoading ? "Marking..." : "Mark COD Collected"}
-              </Button>
-            )}
+            {txn?.method === "cash-on-delivery" &&
+              txn?.status === "pending" && (
+                <Button
+                  onClick={handleMarkCOD}
+                  disabled={codLoading}
+                  className="w-full"
+                >
+                  <LuCheck className="size-4" />
+                  {codLoading ? "Marking..." : "Mark COD Collected"}
+                </Button>
+              )}
             {txn?.status !== "paid" &&
-              !(txn?.method === "cod" && txn?.status === "pending") && (
+              !(
+                txn?.method === "cash-on-delivery" && txn?.status === "pending"
+              ) && (
                 <p className="text-sm text-gray-500 text-center py-2">
                   No actions available
                 </p>
@@ -348,15 +423,29 @@ export default function TransactionDetailsPage() {
                   </div>
                 </div>
               )}
-              {txn?.refund?.processedAt && (
+              {txn?.failedAt && (
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                  <div>
+                    <p className="text-gray-500">Failed</p>
+                    <p className="text-gray-800 dark:text-white">
+                      {moment(txn.failedAt).format("DD MMM YYYY, hh:mm A")}
+                    </p>
+                    {txn.failureReason && (
+                      <p className="text-xs text-red-500 mt-0.5">
+                        {txn.failureReason}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {txn?.refundedAt && (
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-orange-500 mt-1.5 shrink-0" />
                   <div>
                     <p className="text-gray-500">Refunded</p>
                     <p className="text-gray-800 dark:text-white">
-                      {moment(txn.refund.processedAt).format(
-                        "DD MMM YYYY, hh:mm A",
-                      )}
+                      {moment(txn.refundedAt).format("DD MMM YYYY, hh:mm A")}
                     </p>
                   </div>
                 </div>
@@ -402,6 +491,22 @@ export default function TransactionDetailsPage() {
             value={refundData.amount}
             onValueChange={(value) =>
               setRefundData((prev) => ({ ...prev, amount: value }))
+            }
+          />
+          <Select
+            label="Refund Method"
+            options={refundMethodOptions}
+            value={refundData.refundMethod}
+            onValueChange={(value) =>
+              setRefundData((prev) => ({ ...prev, refundMethod: value }))
+            }
+          />
+          <Input
+            label="Refund Note (Optional)"
+            placeholder="e.g. bKash number, bank details..."
+            value={refundData.refundNote}
+            onValueChange={(value) =>
+              setRefundData((prev) => ({ ...prev, refundNote: value }))
             }
           />
           <div className="flex justify-end gap-2">

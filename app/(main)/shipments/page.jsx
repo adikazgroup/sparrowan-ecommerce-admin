@@ -29,6 +29,8 @@ const statusFilterOptions = [
   { value: "pending", label: "Pending" },
   { value: "picked-up", label: "Picked Up" },
   { value: "in-transit", label: "In Transit" },
+  { value: "hub", label: "Hub" },
+  { value: "out-for-delivery", label: "Out for Delivery" },
   { value: "delivered", label: "Delivered" },
   { value: "return-to-sender", label: "Return to Sender" },
   { value: "cancelled", label: "Cancelled" },
@@ -56,6 +58,16 @@ const statusConfig = {
     icon: LuTruck,
     color:
       "text-indigo-600 bg-indigo-100/50 dark:text-indigo-300 dark:bg-indigo-900/30",
+  },
+  hub: {
+    icon: LuPackage,
+    color:
+      "text-purple-600 bg-purple-100/50 dark:text-purple-300 dark:bg-purple-900/30",
+  },
+  "out-for-delivery": {
+    icon: LuTruck,
+    color:
+      "text-cyan-600 bg-cyan-100/50 dark:text-cyan-300 dark:bg-cyan-900/30",
   },
   delivered: {
     icon: LuCheck,
@@ -195,7 +207,7 @@ export default function ShipmentsPage() {
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium capitalize ${config.color}`}
           >
             <Icon className="size-3.5" />
-            {(row.deliveryStatus || "pending").replace("_", " ")}
+            {(row.deliveryStatus || "pending").replace(/-/g, " ")}
           </span>
         );
       },

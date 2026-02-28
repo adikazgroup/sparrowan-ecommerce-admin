@@ -43,8 +43,17 @@ const statusFilterOptions = [
 
 const methodFilterOptions = [
   { value: "", label: "All Methods" },
-  { value: "cod", label: "Cash on Delivery" },
+  { value: "cash-on-delivery", label: "Cash on Delivery" },
   { value: "sslcommerz", label: "SSLCommerz" },
+];
+
+const refundMethodOptions = [
+  { value: "", label: "Select Method" },
+  { value: "bkash", label: "bKash" },
+  { value: "nagad", label: "Nagad" },
+  { value: "bank-transfer", label: "Bank Transfer" },
+  { value: "cash", label: "Cash" },
+  { value: "sslcommerz-reverse", label: "SSLCommerz Reverse" },
 ];
 
 const statusConfig = {
@@ -75,7 +84,7 @@ const statusConfig = {
 };
 
 const methodConfig = {
-  cod: {
+  "cash-on-delivery": {
     icon: LuWallet,
     label: "COD",
     color:
@@ -97,7 +106,12 @@ export default function TransactionsPage() {
 
   const refundModal = useModal();
   const [selectedItem, setSelectedItem] = useState(null);
-  const [refundData, setRefundData] = useState({ reason: "", amount: "" });
+  const [refundData, setRefundData] = useState({
+    reason: "",
+    amount: "",
+    refundMethod: "",
+    refundNote: "",
+  });
   const [filterData, setFilterData] = useState({
     searchTerm: "",
     status: "",
@@ -139,6 +153,8 @@ export default function TransactionsPage() {
       refundAmount: refundData.amount
         ? parseFloat(refundData.amount)
         : undefined,
+      refundMethod: refundData.refundMethod || undefined,
+      refundNote: refundData.refundNote || undefined,
     });
     handleToast({
       result,
@@ -148,7 +164,12 @@ export default function TransactionsPage() {
     });
     if (result?.data) {
       refundModal.close();
-      setRefundData({ reason: "", amount: "" });
+      setRefundData({
+        reason: "",
+        amount: "",
+        refundMethod: "",
+        refundNote: "",
+      });
       setSelectedItem(null);
     }
   };
@@ -201,7 +222,8 @@ export default function TransactionsPage() {
       id: "method",
       header: "Method",
       cell: (_, row) => {
-        const config = methodConfig[row.method] || methodConfig.cod;
+        const config =
+          methodConfig[row.method] || methodConfig["cash-on-delivery"];
         const Icon = config.icon;
         return (
           <span
@@ -268,7 +290,7 @@ export default function TransactionsPage() {
               <LuRotateCcw className="size-4" />
             </button>
           )}
-          {row.method === "cod" && row.status === "pending" && (
+          {row.method === "cash-on-delivery" && row.status === "pending" && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -407,6 +429,22 @@ export default function TransactionsPage() {
             value={refundData.amount}
             onValueChange={(value) =>
               setRefundData((prev) => ({ ...prev, amount: value }))
+            }
+          />
+          <Select
+            label="Refund Method"
+            options={refundMethodOptions}
+            value={refundData.refundMethod}
+            onValueChange={(value) =>
+              setRefundData((prev) => ({ ...prev, refundMethod: value }))
+            }
+          />
+          <Input
+            label="Refund Note (Optional)"
+            placeholder="e.g. bKash number, bank details..."
+            value={refundData.refundNote}
+            onValueChange={(value) =>
+              setRefundData((prev) => ({ ...prev, refundNote: value }))
             }
           />
           <div className="flex justify-end gap-2">
