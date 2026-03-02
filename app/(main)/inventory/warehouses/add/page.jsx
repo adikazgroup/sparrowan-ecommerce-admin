@@ -12,7 +12,6 @@ import { Select } from "@/components/ui/select/Select";
 import { useCreateWarehouseMutation } from "@/features/inventory/warehousesApiSlice";
 import { handleToast } from "@/utils/handleToast";
 import { statusOptions } from "@/utils/DataHelper";
-import { cleanPayload } from "@/utils/cleanPayload";
 
 export default function AddWarehousePage() {
   const router = useRouter();
@@ -52,14 +51,11 @@ export default function AddWarehousePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      toast.error("Please fix the errors");
+      toast.error("Please fix the errors", { id: "create-warehouse" });
       return;
     }
 
-    // Clean payload to remove empty/null/undefined values
-    const cleanedData = cleanPayload(formData);
-
-    const result = await createWarehouse(cleanedData);
+    const result = await createWarehouse(formData);
     handleToast({
       result,
       type: result?.data ? "success" : "error",

@@ -296,9 +296,8 @@ export const statusOptions = [
 
 // Stock Adjustment Type Options
 export const adjustmentTypeOptions = [
-  { value: "increase", label: "Increase" },
-  { value: "decrease", label: "Decrease" },
-  { value: "set", label: "Set Value" },
+  { value: "increase", label: "Increase (Add Stock)" },
+  { value: "decrease", label: "Decrease (Remove Stock)" },
 ];
 
 // Stock Adjustment Status Options

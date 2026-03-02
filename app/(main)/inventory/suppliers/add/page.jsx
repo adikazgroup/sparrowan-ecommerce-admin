@@ -13,7 +13,6 @@ import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useCreateSupplierMutation } from "@/features/inventory/suppliersApiSlice";
 import { handleToast } from "@/utils/handleToast";
 import { statusOptions, paymentTermsOptions } from "@/utils/DataHelper";
-import { cleanPayload } from "@/utils/cleanPayload";
 
 export default function AddSupplierPage() {
   const router = useRouter();
@@ -51,14 +50,11 @@ export default function AddSupplierPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      toast.error("Please fix errors");
+      toast.error("Please fix errors", { id: "create-supplier" });
       return;
     }
 
-    // Clean payload to remove empty/null/undefined values
-    const cleanedData = cleanPayload(formData);
-
-    const result = await createSupplier(cleanedData);
+    const result = await createSupplier(formData);
     handleToast({
       result,
       type: result?.data ? "success" : "error",

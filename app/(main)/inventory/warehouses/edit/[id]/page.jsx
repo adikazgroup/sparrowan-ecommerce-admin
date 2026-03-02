@@ -17,7 +17,6 @@ import { handleToast } from "@/utils/handleToast";
 import { statusOptions } from "@/utils/DataHelper";
 import { PageSkeleton } from "@/components/skeleton/PageSkeleton";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
-import { cleanPayload } from "@/utils/cleanPayload";
 
 export default function EditWarehousePage() {
   const router = useRouter();
@@ -86,14 +85,11 @@ export default function EditWarehousePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      toast.error("Please fix the errors");
+      toast.error("Please fix the errors", { id: "update-warehouse" });
       return;
     }
 
-    // Clean payload to remove empty/null/undefined values
-    const cleanedData = cleanPayload(formData);
-
-    const result = await updateWarehouse({ id, data: cleanedData });
+    const result = await updateWarehouse({ id, data: formData });
     handleToast({
       result,
       type: result?.data ? "success" : "error",

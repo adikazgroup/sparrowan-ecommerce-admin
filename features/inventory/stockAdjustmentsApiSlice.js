@@ -19,7 +19,7 @@ const stockAdjustmentsApiSlice = apiSlice.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["stockAdjustments"],
+      invalidatesTags: ["stockAdjustments", "productVariants", "products"],
     }),
     approveStockAdjustment: builder.mutation({
       query: ({ id, data }) => ({
@@ -27,7 +27,13 @@ const stockAdjustmentsApiSlice = apiSlice.injectEndpoints({
         method: "PATCH",
         body: data,
       }),
-      invalidatesTags: ["stockAdjustments"],
+      invalidatesTags: [
+        "stockAdjustments",
+        "productVariants",
+        "products",
+        "stockLogs",
+        "inventoryBatches",
+      ],
     }),
     deleteStockAdjustment: builder.mutation({
       query: (id) => ({

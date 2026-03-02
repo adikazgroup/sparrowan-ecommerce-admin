@@ -150,14 +150,20 @@ export default function ShipmentsPage() {
     {
       id: "order",
       header: "Order",
-      cell: (_, row) => (
-        <Link
-          href={`/orders/${row.order?._id}`}
-          className="font-mono font-semibold text-primary hover:underline"
-        >
-          {row.order?.orderNumber || "---"}
-        </Link>
-      ),
+      cell: (_, row) => {
+        const orderId = row.orderId || row.order?._id || row.order;
+        const orderNum = row.orderNumber || row.order?.orderNumber;
+        return orderNum ? (
+          <Link
+            href={`/orders/${orderId}`}
+            className="font-mono font-semibold text-primary hover:underline"
+          >
+            {orderNum}
+          </Link>
+        ) : (
+          <span className="text-gray-400">---</span>
+        );
+      },
     },
     {
       id: "courier",
@@ -176,14 +182,17 @@ export default function ShipmentsPage() {
     {
       id: "recipient",
       header: "Recipient",
-      cell: (_, row) => (
-        <div>
-          <p className="font-medium text-gray-800 dark:text-white text-sm">
-            {row.recipientName || "---"}
-          </p>
-          <p className="text-xs text-gray-500">{row.recipientPhone || ""}</p>
-        </div>
-      ),
+      cell: (_, row) => {
+        const addr = row.shippingAddress;
+        return (
+          <div>
+            <p className="font-medium text-gray-800 dark:text-white text-sm">
+              {addr?.name || "---"}
+            </p>
+            <p className="text-xs text-gray-500">{addr?.phone || ""}</p>
+          </div>
+        );
+      },
     },
     {
       id: "cod",

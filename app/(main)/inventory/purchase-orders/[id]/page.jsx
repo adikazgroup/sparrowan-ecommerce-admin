@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
@@ -33,22 +33,16 @@ import { useModal } from "@/lib/useModal";
 const getStatusBadge = (status) => {
   const styles = {
     draft: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-    pending:
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
-    approved:
+    confirmed:
       "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
-    partial:
-      "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300",
     received:
       "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
     cancelled: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
   };
   const icons = {
     draft: <LuClock className="size-4" />,
-    pending: <LuClock className="size-4" />,
-    approved: <LuCheck className="size-4" />,
-    partial: <LuClock className="size-4" />,
-    received: <LuCheck className="size-4" />,
+    confirmed: <LuCheck className="size-4" />,
+    received: <LuPackage className="size-4" />,
     cancelled: <LuX className="size-4" />,
   };
   return (
@@ -82,36 +76,10 @@ export default function ViewPurchaseOrderPage() {
   const [recordPayment, { isLoading: paymentLoading }] =
     useRecordPurchaseOrderPaymentMutation();
 
-  const [receiveQuantities, setReceiveQuantities] = useState({});
   const [paymentAmount, setPaymentAmount] = useState("");
   const paymentModal = useModal();
 
   const po = data?.data;
-
-  // Initialize receive quantities when PO loads
-  useEffect(() => {
-    if (po?.items) {
-      const quantities = {};
-      po.items.forEach((item) => {
-        const remaining = item.orderedQuantity - item.receivedQuantity;
-        quantities[item._id] = remaining > 0 ? remaining : 0;
-      });
-      setReceiveQuantities(quantities);
-    }
-  }, [po]);
-
-  const handleSubmit = async () => {
-    const loadingToast = toast.loading("Submitting for approval...");
-    const result = await submitPO(id);
-    handleToast({
-      result,
-      type: result?.data ? "success" : "error",
-      id: "submit-po",
-      message: "Purchase order submitted for approval!",
-    });
-    toast.dismiss(loadingToast);
-    if (result?.data) refetch();
-  };
 
   const handleConfirm = async () => {
     const loadingToast = toast.loading("Approving order...");
@@ -127,20 +95,8 @@ export default function ViewPurchaseOrderPage() {
   };
 
   const handleReceive = async () => {
-    const itemsToReceive = Object.entries(receiveQuantities)
-      .filter(([_, qty]) => qty > 0)
-      .map(([itemId, receivedQuantity]) => ({
-        itemId,
-        receivedQuantity: parseInt(receivedQuantity),
-      }));
-
-    if (itemsToReceive.length === 0) {
-      toast.error("No items to receive");
-      return;
-    }
-
     const loadingToast = toast.loading("Receiving items...");
-    const result = await receiveItems({ id, data: { items: itemsToReceive } });
+    const result = await receiveItems(id);
     handleToast({
       result,
       type: result?.data ? "success" : "error",
@@ -149,13 +105,6 @@ export default function ViewPurchaseOrderPage() {
     });
     toast.dismiss(loadingToast);
     if (result?.data) refetch();
-  };
-
-  const updateReceiveQty = (itemId, value) => {
-    setReceiveQuantities((prev) => ({
-      ...prev,
-      [itemId]: Math.max(0, parseInt(value) || 0),
-    }));
   };
 
   const handleRecordPayment = async () => {
@@ -199,9 +148,6 @@ export default function ViewPurchaseOrderPage() {
 
   const canConfirm = po?.status === "draft";
   const canReceive = po?.status === "confirmed";
-  const hasItemsToReceive = po?.items?.some(
-    (item) => item.receivedQuantity < item.orderedQuantity,
-  );
 
   if (isLoading) return <PageSkeleton />;
   if (isError || !po) return <ErrorBoundaryFetcher />;
@@ -291,20 +237,15 @@ export default function ViewPurchaseOrderPage() {
 
             {/* Table Header */}
             <div className="hidden md:grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 uppercase px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-              <div className="col-span-4">Product</div>
-              <div className="col-span-1 text-center">Ordered</div>
-              <div className="col-span-1 text-center">Received</div>
-              <div className="col-span-2 text-center">Unit Cost</div>
-              <div className="col-span-2 text-right">Total</div>
-              {canReceive && hasItemsToReceive && (
-                <div className="col-span-2 text-center">Receive Now</div>
-              )}
+              <div className="col-span-5">Product</div>
+              <div className="col-span-2 text-center">Ordered</div>
+              <div className="col-span-2 text-center">Received</div>
+              <div className="col-span-3 text-right">Total</div>
             </div>
 
             {/* Items */}
             <div className="space-y-2">
               {po.items?.map((item) => {
-                const remaining = item.orderedQuantity - item.receivedQuantity;
                 const itemTotal = item.unitCost * item.orderedQuantity;
                 const isFullyReceived =
                   item.receivedQuantity >= item.orderedQuantity;
@@ -314,69 +255,54 @@ export default function ViewPurchaseOrderPage() {
                     key={item._id}
                     className={`grid grid-cols-12 gap-2 items-center p-3 rounded-lg border ${isFullyReceived ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}
                   >
-                    <div className="col-span-12 md:col-span-4">
+                    <div className="col-span-12 md:col-span-5">
                       <p className="font-medium text-gray-800 dark:text-white">
                         {item.name}
                       </p>
-                      <p className="text-xs text-gray-500">
-                        {item.sku || "---"}
-                      </p>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        {item.sku && <span>SKU: {item.sku}</span>}
+                        <span>
+                          Unit Cost: ৳{item.unitCost?.toLocaleString()}
+                        </span>
+                        {item.discount > 0 && (
+                          <span>Disc: -৳{item.discount}</span>
+                        )}
+                        {item.tax > 0 && <span>Tax: +৳{item.tax}</span>}
+                      </div>
                     </div>
-                    <div className="col-span-4 md:col-span-1 text-center">
+                    <div className="col-span-4 md:col-span-2 text-center">
                       <span className="text-gray-800 dark:text-white font-medium">
                         {item.orderedQuantity}
                       </span>
                     </div>
-                    <div className="col-span-4 md:col-span-1 text-center">
+                    <div className="col-span-4 md:col-span-2 text-center">
                       <span
                         className={`font-medium ${isFullyReceived ? "text-green-600" : "text-amber-600"}`}
                       >
                         {item.receivedQuantity}
+                        {isFullyReceived && (
+                          <LuCheck className="inline-block size-3.5 ml-1" />
+                        )}
                       </span>
                     </div>
-                    <div className="col-span-4 md:col-span-2 text-center">
-                      <span className="text-gray-600 dark:text-gray-400">
-                        {formatCurrency(item.unitCost)}
-                      </span>
-                    </div>
-                    <div className="col-span-6 md:col-span-2 text-right">
+                    <div className="col-span-4 md:col-span-3 text-right">
                       <span className="font-medium text-gray-800 dark:text-white">
                         {formatCurrency(itemTotal)}
                       </span>
                     </div>
-                    {canReceive && hasItemsToReceive && (
-                      <div className="col-span-6 md:col-span-2 flex justify-center">
-                        {!isFullyReceived ? (
-                          <Input
-                            type="number"
-                            min="0"
-                            max={remaining}
-                            value={receiveQuantities[item._id] || 0}
-                            onValueChange={(val) =>
-                              updateReceiveQty(item._id, val)
-                            }
-                            className="w-20 text-center"
-                          />
-                        ) : (
-                          <span className="text-green-600 flex items-center gap-1 text-sm">
-                            <LuCheck className="size-4" /> Done
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
                 );
               })}
             </div>
 
             {/* Receive Button */}
-            {canReceive && hasItemsToReceive && (
+            {canReceive && (
               <div className="pt-4 flex justify-end">
                 <Button onClick={handleReceive} disabled={receiveLoading}>
-                  <LuCheck className="size-4" />{" "}
+                  <LuPackage className="size-4" />{" "}
                   {receiveLoading
                     ? "Receiving..."
-                    : "Receive Items & Update Stock"}
+                    : "Receive All Items & Update Stock"}
                 </Button>
               </div>
             )}

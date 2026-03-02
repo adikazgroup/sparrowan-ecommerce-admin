@@ -18,7 +18,6 @@ import { handleToast } from "@/utils/handleToast";
 import { statusOptions, paymentTermsOptions } from "@/utils/DataHelper";
 import { PageSkeleton } from "@/components/skeleton/PageSkeleton";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
-import { cleanPayload } from "@/utils/cleanPayload";
 
 export default function EditSupplierPage() {
   const router = useRouter();
@@ -81,14 +80,11 @@ export default function EditSupplierPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      toast.error("Please fix errors");
+      toast.error("Please fix errors", { id: "update-supplier" });
       return;
     }
 
-    // Clean payload to remove empty/null/undefined values
-    const cleanedData = cleanPayload(formData);
-
-    const result = await updateSupplier({ id, data: cleanedData });
+    const result = await updateSupplier({ id, data: formData });
     handleToast({
       result,
       type: result?.data ? "success" : "error",

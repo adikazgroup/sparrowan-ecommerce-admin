@@ -37,12 +37,17 @@ const purchaseOrdersApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["purchaseOrders"],
     }),
     receivePurchaseOrderItems: builder.mutation({
-      query: ({ id, data }) => ({
+      query: (id) => ({
         url: `/admin/purchase-orders/${id}/receive`,
         method: "PATCH",
-        body: data,
       }),
-      invalidatesTags: ["purchaseOrders", "products", "productVariants"],
+      invalidatesTags: [
+        "purchaseOrders",
+        "products",
+        "productVariants",
+        "stockLogs",
+        "inventoryBatches",
+      ],
     }),
     cancelPurchaseOrder: builder.mutation({
       query: (id) => ({

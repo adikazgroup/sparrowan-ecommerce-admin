@@ -26,7 +26,7 @@ const Select = forwardRef(
       optionRenderer,
       ...props
     },
-    ref
+    ref,
   ) => {
     const buttonRef = useRef(null);
     const optionsRef = useRef(null);
@@ -41,10 +41,10 @@ const Select = forwardRef(
     });
 
     const [selectedValue, setSelectedValue] = useState(
-      value || defaultValue || ""
+      value || defaultValue || "",
     );
     const selectedOption = options.find(
-      (option) => option.value === selectedValue
+      (option) => option.value === selectedValue,
     );
     const displayValue = selectedOption ? selectedOption.label : "";
 
@@ -77,8 +77,8 @@ const Select = forwardRef(
       if (!isOpen && buttonRef.current) {
         const rect = buttonRef.current.getBoundingClientRect();
         setDropdownStyle({
-          top: rect.bottom + window.scrollY + 3,
-          left: rect.left + window.scrollX,
+          top: rect.bottom + 3,
+          left: rect.left,
           width: rect.width,
         });
 
@@ -98,8 +98,8 @@ const Select = forwardRef(
       if (isOpen && buttonRef.current) {
         const rect = buttonRef.current.getBoundingClientRect();
         setDropdownStyle({
-          top: rect.bottom + window.scrollY,
-          left: rect.left + window.scrollX,
+          top: rect.bottom + 3,
+          left: rect.left,
           width: rect.width,
         });
       }
@@ -175,7 +175,7 @@ const Select = forwardRef(
           isSelected
             ? "bg-gray-100/80 dark:bg-primary text-primary dark:text-white justify-between hover:dark:bg-primary"
             : "hover:bg-gray-100/80 dark:hover:bg-primary/20",
-          isHighlighted && "bg-gray-100 dark:bg-[#1E1E1E]"
+          isHighlighted && "bg-gray-100 dark:bg-[#1E1E1E]",
         )}
       >
         <div className="flex items-center">
@@ -216,7 +216,7 @@ const Select = forwardRef(
               "flex h-11 w-full items-center justify-between rounded-md border border-input  px-3 py-2 text-sm ring-offset-background focus:outline-none  disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer dark:bg-transparent dark:border-accent dark:font-[350]",
               startIcon && "pl-10",
               error && "border-red-500",
-              className
+              className,
             )}
             onClick={toggleDropdown}
             onKeyDown={handleKeyDown}
@@ -258,15 +258,14 @@ const Select = forwardRef(
         )}
         {error && <p className="text-xs text-red-500">{error}</p>}
 
-        {dropdownStyle.top > 0 &&
-          dropdownStyle.left > 0 &&
+        {dropdownStyle.width > 0 &&
           createPortal(
             <div
               style={{
                 top: dropdownStyle.top,
                 left: dropdownStyle.left,
                 width: dropdownStyle.width,
-                position: "absolute",
+                position: "fixed",
                 zIndex: 9999,
               }}
               className={`rounded-md border border-gray-200 dark:border-primary/20 bg-white dark:bg-accent shadow-lg ani3 transition-opacity duration-200 ${
@@ -299,18 +298,18 @@ const Select = forwardRef(
                       {renderOption(
                         option,
                         selectedValue === option.value,
-                        highlightedIndex === index
+                        highlightedIndex === index,
                       )}
                     </div>
                   ))
                 )}
               </div>
             </div>,
-            document.body
+            document.body,
           )}
       </div>
     );
-  }
+  },
 );
 
 Select.displayName = "Select";

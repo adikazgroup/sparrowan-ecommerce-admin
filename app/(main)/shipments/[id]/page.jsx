@@ -76,6 +76,32 @@ const timelineIcons = {
   cancelled: { icon: LuX, color: "bg-red-500" },
 };
 
+// Same flow-aware logic as order detail page
+const getAllowedNextTrackingStatuses = (status, usedStatuses = []) => {
+  const sequential = {
+    pending: ["picked-up"],
+    "picked-up": ["in-transit"],
+    "in-transit": ["hub", "out-for-delivery"],
+    hub: ["out-for-delivery"],
+    "out-for-delivery": ["delivered"],
+  };
+  const next = sequential[status] || [];
+  const filtered = next.filter((s) => !usedStatuses.includes(s));
+  if (
+    !["delivered", "cancelled", "return-to-sender"].includes(status) &&
+    !usedStatuses.includes("cancelled")
+  ) {
+    filtered.push("cancelled");
+  }
+  if (
+    status === "out-for-delivery" &&
+    !usedStatuses.includes("return-to-sender")
+  ) {
+    filtered.push("return-to-sender");
+  }
+  return filtered;
+};
+
 export default function ShipmentDetailsPage() {
   const params = useParams();
   const shipmentId = params.id;
@@ -87,6 +113,24 @@ export default function ShipmentDetailsPage() {
 
   const { data, isLoading, isError } = useGetSingleShipmentQuery(shipmentId);
   const shipment = data?.data;
+
+  // Compute allowed next tracking statuses from event history
+  const usedStatuses = shipment?.events?.map((e) => e.status) ?? [];
+  const allowedNextTracking = getAllowedNextTrackingStatuses(
+    shipment?.deliveryStatus,
+    usedStatuses,
+  );
+  const filteredTrackingOptions = deliveryStatusOptions.filter((o) =>
+    allowedNextTracking.includes(o.value),
+  );
+  const isTerminalStatus = [
+    "delivered",
+    "cancelled",
+    "return-to-sender",
+  ].includes(shipment?.deliveryStatus);
+
+  // Get recipient info from populated order.shippingAddress
+  const recipient = shipment?.order?.shippingAddress;
 
   const handleUpdateStatus = async () => {
     if (!newStatus) {
@@ -199,25 +243,34 @@ export default function ShipmentDetailsPage() {
               <LuMapPin className="size-4" />
               Recipient Information
             </h2>
-            <div className="space-y-2 text-sm">
-              <p className="font-medium text-gray-800 dark:text-white">
-                {shipment?.recipientName}
-              </p>
-              <p className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <LuPhone className="size-4" />
-                {shipment?.recipientPhone}
-              </p>
-              <p className="text-gray-600 dark:text-gray-400">
-                {shipment?.recipientAddress}
-              </p>
-              {shipment?.recipientCity && (
-                <p className="text-gray-600 dark:text-gray-400">
-                  {shipment.recipientCity}
-                  {shipment.recipientZone && `, ${shipment.recipientZone}`}
-                  {shipment.recipientArea && `, ${shipment.recipientArea}`}
+            {recipient ? (
+              <div className="space-y-2 text-sm">
+                <p className="font-medium text-gray-800 dark:text-white">
+                  {recipient.name}
                 </p>
-              )}
-            </div>
+                {recipient.phone && (
+                  <p className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                    <LuPhone className="size-4" />
+                    {recipient.phone}
+                  </p>
+                )}
+                <p className="text-gray-600 dark:text-gray-400">
+                  {[
+                    recipient.street,
+                    recipient.city,
+                    recipient.state,
+                    recipient.zip,
+                    recipient.country,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                No recipient info available
+              </p>
+            )}
           </div>
 
           {/* Linked Order */}
@@ -302,38 +355,42 @@ export default function ShipmentDetailsPage() {
         {/* Right Column */}
         <div className="space-y-6">
           {/* Update Status */}
-          {shipment?.deliveryStatus !== "delivered" &&
-            shipment?.deliveryStatus !== "cancelled" &&
-            shipment?.deliveryStatus !== "return-to-sender" && (
-              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
-                <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">
-                  Update Status
-                </h2>
-                <div className="space-y-3">
-                  <Select
-                    label="New Status"
-                    options={deliveryStatusOptions}
-                    value={newStatus}
-                    onValueChange={setNewStatus}
-                  />
-                  <Textarea
-                    label="Note (Optional)"
-                    placeholder="Add tracking note..."
-                    value={newNote}
-                    onValueChange={setNewNote}
-                    rows={2}
-                  />
-                  <Button
-                    onClick={handleUpdateStatus}
-                    disabled={updateLoading || !newStatus}
-                    className="w-full"
-                  >
-                    <LuSave className="size-4" />
-                    {updateLoading ? "Updating..." : "Update Status"}
-                  </Button>
-                </div>
+          {!isTerminalStatus && filteredTrackingOptions.length > 0 && (
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">
+                Update Status
+              </h2>
+              <p className="text-xs text-gray-500 mb-3">
+                Current:{" "}
+                <span className="font-medium capitalize">
+                  {(shipment?.deliveryStatus || "").replace(/-/g, " ")}
+                </span>
+              </p>
+              <div className="space-y-3">
+                <Select
+                  label="New Status"
+                  options={filteredTrackingOptions}
+                  value={newStatus}
+                  onValueChange={setNewStatus}
+                />
+                <Textarea
+                  label="Note (Optional)"
+                  placeholder="Add tracking note..."
+                  value={newNote}
+                  onValueChange={setNewNote}
+                  rows={2}
+                />
+                <Button
+                  onClick={handleUpdateStatus}
+                  disabled={updateLoading || !newStatus}
+                  className="w-full"
+                >
+                  <LuSave className="size-4" />
+                  {updateLoading ? "Updating..." : "Update Status"}
+                </Button>
               </div>
-            )}
+            </div>
+          )}
 
           {/* Courier Details */}
           {shipment?.courier === "PATHAO" && shipment?.pathaoConsignmentId && (

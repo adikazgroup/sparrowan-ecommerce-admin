@@ -189,8 +189,8 @@ export default function EditPurchaseOrderPage() {
       newErrors.items = "At least one product is required";
     } else {
       for (const item of validItems) {
-        if (item.productData?.variantCount > 1 && !item.variant) {
-          newErrors.items = "Please select variant for products with variants";
+        if (item.productData?.variantCount >= 1 && !item.variant) {
+          newErrors.items = "Please select a variant for all products";
           break;
         }
         if (!item.orderedQuantity || item.orderedQuantity <= 0) {
@@ -460,41 +460,23 @@ function POItemRow({
   formatCurrency,
 }) {
   const productId = item.product;
-  const hasMultipleVariants = (item.productData?.variantCount || 0) > 1;
+  const hasVariants = (item.productData?.variantCount || 0) >= 1;
 
+  // Fetch variants for all products (every product has at least 1 variant)
   const { data: variantsData, isLoading: variantsLoading } =
     useGetVariantsByProductQuery(productId, {
-      skip: !productId || !hasMultipleVariants,
+      skip: !productId || !hasVariants,
     });
 
   const variantOptions = variantsData?.data || [];
 
-  // Auto-select default variant for single-variant products
+  // Auto-select default variant for single-variant products when data loads
   useEffect(() => {
-    if (
-      productId &&
-      !hasMultipleVariants &&
-      item.productData?.variantCount === 1 &&
-      !item.variant
-    ) {
-      // Fetch variant for single-variant product
-      fetch(`/api/admin/product-variants/product/${productId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data?.data && data.data.length > 0) {
-            const defaultVariant =
-              data.data.find((v) => v.isDefault) || data.data[0];
-            updateItem(item.id, "variant", defaultVariant._id, defaultVariant);
-          }
-        })
-        .catch((err) => console.error("Error auto-selecting variant:", err));
+    if (productId && variantOptions.length === 1 && !item.variant) {
+      const defaultVariant = variantOptions[0];
+      updateItem(item.id, "variant", defaultVariant._id, defaultVariant);
     }
-  }, [
-    productId,
-    hasMultipleVariants,
-    item.variant,
-    item.productData?.variantCount,
-  ]);
+  }, [productId, variantOptions, item.variant, item.id, updateItem]);
 
   const itemTotal =
     ((parseFloat(item.unitCost) || 0) -
@@ -517,13 +499,13 @@ function POItemRow({
             { value: "", label: "Select Product" },
             ...productOptions.map((p) => ({
               value: p.value,
-              label: `${p.label}${p.variantCount > 1 ? " (has variants)" : ""}`,
+              label: `${p.label}${p.variantCount > 1 ? " (multiple variants)" : ""}`,
             })),
           ]}
           value={item.product}
           onValueChange={(val) => updateItem(item.id, "product", val)}
         />
-        {hasMultipleVariants && (
+        {hasVariants && (
           <Select
             label="Variant"
             placeholder={variantsLoading ? "Loading..." : "Select Variant"}

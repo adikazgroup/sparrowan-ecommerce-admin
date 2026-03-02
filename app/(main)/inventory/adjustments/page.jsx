@@ -16,6 +16,8 @@ import {
   LuPlus,
   LuSearch,
   LuRefreshCw,
+  LuWarehouse,
+  LuPackage,
 } from "react-icons/lu";
 
 import { useModal } from "@/lib/useModal";
@@ -28,6 +30,7 @@ import { TableSkeleton } from "@/components/skeleton/TableSkeleton";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
 import {
   useGetStockAdjustmentListQuery,
+  useGetSingleStockAdjustmentQuery,
   useApproveStockAdjustmentMutation,
   useDeleteStockAdjustmentMutation,
 } from "@/features/inventory/stockAdjustmentsApiSlice";
@@ -51,8 +54,18 @@ const adjustmentTypeOptions = [
   { value: "", label: "All Types" },
   { value: "increase", label: "Increase" },
   { value: "decrease", label: "Decrease" },
-  { value: "set", label: "Set" },
 ];
+
+// Helper to format variant attributes
+const formatVariantLabel = (row) => {
+  const attrs = [];
+  if (row.variantAttributes?.size) attrs.push(row.variantAttributes.size);
+  if (row.variantAttributes?.color) attrs.push(row.variantAttributes.color);
+  if (row.variantAttributes?.material)
+    attrs.push(row.variantAttributes.material);
+  if (attrs.length > 0) return attrs.join(" / ");
+  return row.variantSku || "";
+};
 
 export default function StockAdjustmentsPage() {
   const [approveAdjustment, { isLoading: approveLoading }] =
@@ -80,6 +93,13 @@ export default function StockAdjustmentsPage() {
     page,
     limit,
   });
+
+  // Fetch full details when viewing a single adjustment
+  const { data: singleData } = useGetSingleStockAdjustmentQuery(
+    selectedItem?._id,
+    { skip: !selectedItem?._id || !viewModal.isOpen },
+  );
+  const detailItem = singleData?.data || selectedItem;
 
   const items = data?.data || [];
   const totalData = data?.meta?.total || 0;
@@ -133,16 +153,29 @@ export default function StockAdjustmentsPage() {
   const columns = [
     {
       id: "product",
-      header: "Product",
+      header: "Product / Variant",
       cell: (_, row) => (
         <div>
           <p className="font-medium text-gray-800 dark:text-white">
             {row.productName || "---"}
           </p>
-          <p className="text-xs text-gray-500">
-            {row.warehouseName || "Default"}
-          </p>
+          {formatVariantLabel(row) && (
+            <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+              <LuPackage className="size-3" />
+              {formatVariantLabel(row)}
+            </p>
+          )}
         </div>
+      ),
+    },
+    {
+      id: "warehouse",
+      header: "Warehouse",
+      cell: (_, row) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+          <LuWarehouse className="size-3.5" />
+          {row.warehouseName || "---"}
+        </span>
       ),
     },
     {
@@ -177,15 +210,6 @@ export default function StockAdjustmentsPage() {
       cell: (_, row) => (
         <span className="text-sm text-gray-600 dark:text-gray-400">
           {row.previousStock} → {row.currentStock}
-        </span>
-      ),
-    },
-    {
-      id: "reason",
-      header: "Reason",
-      cell: (_, row) => (
-        <span className="text-sm text-gray-600 dark:text-gray-400 max-w-[150px] truncate block">
-          {row.reason}
         </span>
       ),
     },
@@ -350,13 +374,14 @@ export default function StockAdjustmentsPage() {
         </>
       )}
 
+      {/* View Details Modal */}
       <Modal
         open={viewModal.isOpen}
         onClose={viewModal.close}
         title="Adjustment Details"
         size="medium"
       >
-        {selectedItem && (
+        {detailItem && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
               <div>
@@ -364,47 +389,112 @@ export default function StockAdjustmentsPage() {
                   Product
                 </label>
                 <p className="text-gray-800 dark:text-white">
-                  {selectedItem.productName}
+                  {detailItem.productName || detailItem.product?.name || "---"}
                 </p>
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase">
+                  Variant (SKU)
+                </label>
+                <p className="text-gray-800 dark:text-white">
+                  {detailItem.variantSku || detailItem.variant?.sku || "---"}
+                </p>
+                {(detailItem.variantAttributes ||
+                  detailItem.variant?.attributes) && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {(() => {
+                      const attrs =
+                        detailItem.variantAttributes ||
+                        detailItem.variant?.attributes;
+                      const parts = [];
+                      if (attrs?.size) parts.push(attrs.size);
+                      if (attrs?.color) parts.push(attrs.color);
+                      if (attrs?.material) parts.push(attrs.material);
+                      return parts.join(" / ");
+                    })()}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 uppercase">
+                  Warehouse
+                </label>
+                <p className="text-gray-800 dark:text-white">
+                  {detailItem.warehouseName ||
+                    detailItem.warehouse?.name ||
+                    "---"}
+                </p>
+              </div>
+              {detailItem.batch?.batchNumber && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase">
+                    Inventory Batch
+                  </label>
+                  <p className="font-mono font-semibold text-gray-800 dark:text-white">
+                    {detailItem.batch.batchNumber}
+                  </p>
+                  {detailItem.batch.unitCost && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Unit Cost: ৳{detailItem.batch.unitCost?.toFixed(2)}
+                    </p>
+                  )}
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-medium text-gray-500 uppercase">
                   Type
                 </label>
-                <p className="text-gray-800 dark:text-white capitalize">
-                  {selectedItem.adjustmentType}
+                <p className="text-gray-800 dark:text-white capitalize flex items-center gap-2">
+                  {typeIcons[detailItem.adjustmentType]}
+                  {detailItem.adjustmentType}
                 </p>
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase">
                   Quantity
                 </label>
-                <p className="text-gray-800 dark:text-white">
-                  {selectedItem.quantity}
+                <p
+                  className={`font-semibold ${detailItem.adjustmentType === "increase" ? "text-green-600" : detailItem.adjustmentType === "decrease" ? "text-red-600" : "text-blue-600"}`}
+                >
+                  {detailItem.adjustmentType === "increase"
+                    ? "+"
+                    : detailItem.adjustmentType === "decrease"
+                      ? "-"
+                      : ""}
+                  {detailItem.quantity}
                 </p>
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase">
                   Status
                 </label>
-                <p className="text-gray-800 dark:text-white capitalize">
-                  {selectedItem.status}
-                </p>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium capitalize mt-1 ${statusColors[detailItem.status]}`}
+                >
+                  {detailItem.status === "pending" ? (
+                    <LuClock className="size-3.5" />
+                  ) : detailItem.status === "approved" ? (
+                    <LuCheck className="size-3.5" />
+                  ) : (
+                    <LuX className="size-3.5" />
+                  )}
+                  {detailItem.status}
+                </span>
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase">
                   Previous Stock
                 </label>
                 <p className="text-gray-800 dark:text-white">
-                  {selectedItem.previousStock}
+                  {detailItem.previousStock}
                 </p>
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase">
                   Current Stock
                 </label>
-                <p className="text-gray-800 dark:text-white">
-                  {selectedItem.currentStock}
+                <p className="text-gray-800 dark:text-white font-semibold">
+                  {detailItem.currentStock}
                 </p>
               </div>
               <div className="col-span-2">
@@ -412,11 +502,82 @@ export default function StockAdjustmentsPage() {
                   Reason
                 </label>
                 <p className="text-gray-800 dark:text-white">
-                  {selectedItem.reason}
+                  {detailItem.reason}
                 </p>
               </div>
+              {detailItem.notes && (
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-gray-500 uppercase">
+                    Notes
+                  </label>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    {detailItem.notes}
+                  </p>
+                </div>
+              )}
             </div>
+
+            {/* Approval info */}
+            {detailItem.status !== "pending" && (
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-4">
+                  {(detailItem.approvedBy?.name ||
+                    detailItem.approvedBy?.email) && (
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase">
+                        {detailItem.status === "approved"
+                          ? "Approved By"
+                          : "Rejected By"}
+                      </label>
+                      <p className="text-gray-800 dark:text-white">
+                        {detailItem.approvedBy?.name ||
+                          detailItem.approvedBy?.email}
+                      </p>
+                    </div>
+                  )}
+                  {detailItem.approvedAt && (
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase">
+                        {detailItem.status === "approved"
+                          ? "Approved At"
+                          : "Rejected At"}
+                      </label>
+                      <p className="text-gray-800 dark:text-white">
+                        {moment(detailItem.approvedAt).format(
+                          "DD MMM YYYY, hh:mm A",
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {detailItem.createdBy?.name && (
+              <div className="text-xs text-gray-500 flex items-center justify-between">
+                <span>Created by: {detailItem.createdBy.name}</span>
+                <span>
+                  {moment(detailItem.createdAt).format("DD MMM YYYY, hh:mm A")}
+                </span>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2">
+              {detailItem.status === "pending" && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    viewModal.close();
+                    setTimeout(() => {
+                      setSelectedItem(detailItem);
+                      approveModal.open();
+                    }, 150);
+                  }}
+                  startIcon={<LuCheck className="size-4" />}
+                >
+                  Approve / Reject
+                </Button>
+              )}
               <Button variant="outline" onClick={viewModal.close}>
                 Close
               </Button>
@@ -425,6 +586,7 @@ export default function StockAdjustmentsPage() {
         )}
       </Modal>
 
+      {/* Approve/Reject Modal */}
       <Modal
         open={approveModal.isOpen}
         onClose={approveModal.close}
@@ -432,8 +594,32 @@ export default function StockAdjustmentsPage() {
         size="small"
       >
         <div className="space-y-4">
+          {selectedItem && (
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg space-y-1 text-sm">
+              <p>
+                <span className="text-gray-500">Product:</span>{" "}
+                <span className="font-medium text-gray-800 dark:text-white">
+                  {selectedItem.productName}
+                </span>
+              </p>
+              <p>
+                <span className="text-gray-500">Variant:</span>{" "}
+                <span className="font-medium text-gray-800 dark:text-white">
+                  {formatVariantLabel(selectedItem) || selectedItem.variantSku}
+                </span>
+              </p>
+              <p>
+                <span className="text-gray-500">Action:</span>{" "}
+                <span className="font-medium capitalize">
+                  {selectedItem.adjustmentType}
+                </span>{" "}
+                <span className="font-bold">{selectedItem.quantity}</span> units
+              </p>
+            </div>
+          )}
           <p className="text-gray-600 dark:text-gray-400">
-            Choose action for this stock adjustment:
+            Choose action for this stock adjustment. Approving will update stock
+            across the system (variant, warehouse, batches).
           </p>
           <div className="flex justify-end gap-2">
             <Button
@@ -464,6 +650,7 @@ export default function StockAdjustmentsPage() {
         </div>
       </Modal>
 
+      {/* Delete Modal */}
       <Modal
         open={deleteModal.isOpen}
         onClose={deleteModal.close}

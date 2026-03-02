@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { useParams } from "next/navigation";
 import moment from "moment";
 import { toast } from "react-hot-toast";
@@ -23,6 +23,7 @@ import {
   LuCheck,
   LuClock,
   LuExternalLink,
+  LuWarehouse,
 } from "react-icons/lu";
 import Link from "next/link";
 
@@ -116,6 +117,85 @@ const deliveryStatusColors = {
   "return-to-sender":
     "text-orange-600 bg-orange-100/50 dark:text-orange-300 dark:bg-orange-900/30",
   cancelled: "text-red-600 bg-red-100/50 dark:text-red-300 dark:bg-red-900/30",
+};
+
+// === Order Flow Logic ===
+const COD_FLOW = ["pending", "confirmed", "shipped", "delivered"];
+const PICKUP_FLOW = ["pending", "confirmed", "delivered"];
+const ONLINE_PAYMENT_FLOW = [
+  "pending_payment",
+  "confirmed",
+  "shipped",
+  "delivered",
+];
+
+/**
+ * For pickup: pending → confirmed → delivered (manual)
+ * For COD pending orders: only allow confirm (shipment tracking handles shipped/delivered)
+ * For online-payment pending_payment: no manual options (webhook handles → confirmed)
+ * For COD/online-payment confirmed+: shipment tracking handles shipped → delivered
+ *   — manual shipped/delivered kept as admin fallback when no shipment exists
+ */
+const getAllowedNextStatuses = (status, orderType, hasShipment) => {
+  if (orderType === "pickup") {
+    const pickupMap = {
+      pending: ["confirmed"],
+      confirmed: ["delivered"],
+    };
+    return pickupMap[status] || [];
+  }
+  // Online-payment: pending_payment handled by webhook — no manual advance
+  if (status === "pending_payment") return [];
+  // COD / online-payment (non-pickup)
+  // After confirmed, if shipment exists → tracking handles shipped/delivered, no manual options
+  if (hasShipment && ["confirmed", "shipped"].includes(status)) return [];
+  const map = {
+    pending: ["confirmed"],
+    confirmed: ["shipped"],
+    shipped: ["delivered"],
+  };
+  return map[status] || [];
+};
+
+const getAllowedNextTrackingStatuses = (status, usedStatuses = []) => {
+  // Sequential flow: pending → picked-up → in-transit → hub → out-for-delivery → delivered
+  // Only show the immediate next status + cancelled (no jumping ahead)
+  const sequential = {
+    pending: ["picked-up"],
+    "picked-up": ["in-transit"],
+    "in-transit": ["hub", "out-for-delivery"],
+    hub: ["out-for-delivery"],
+    "out-for-delivery": ["delivered"],
+  };
+  const next = sequential[status] || [];
+  // Filter out already-used statuses, then add "cancelled" if not terminal
+  const filtered = next.filter((s) => !usedStatuses.includes(s));
+  // Add cancelled option if current status isn't terminal
+  if (
+    !["delivered", "cancelled", "return-to-sender"].includes(status) &&
+    !usedStatuses.includes("cancelled")
+  ) {
+    filtered.push("cancelled");
+  }
+  // For out-for-delivery, also allow return-to-sender
+  if (
+    status === "out-for-delivery" &&
+    !usedStatuses.includes("return-to-sender")
+  ) {
+    filtered.push("return-to-sender");
+  }
+  return filtered;
+};
+
+const trackingEventIcons = {
+  pending: { icon: LuClock, color: "bg-yellow-500" },
+  "picked-up": { icon: LuPackage, color: "bg-blue-500" },
+  "in-transit": { icon: LuTruck, color: "bg-indigo-500" },
+  hub: { icon: LuWarehouse, color: "bg-purple-500" },
+  "out-for-delivery": { icon: LuTruck, color: "bg-cyan-500" },
+  delivered: { icon: LuCheck, color: "bg-green-500" },
+  "return-to-sender": { icon: LuMapPin, color: "bg-orange-500" },
+  cancelled: { icon: LuX, color: "bg-red-500" },
 };
 
 export default function OrderDetailsPage() {
@@ -273,7 +353,9 @@ export default function OrderDetailsPage() {
     if (shipmentForm.trackingNumber)
       body.trackingNumber = shipmentForm.trackingNumber;
     if (shipmentForm.estimatedDelivery)
-      body.estimatedDelivery = shipmentForm.estimatedDelivery;
+      body.estimatedDelivery = new Date(
+        shipmentForm.estimatedDelivery,
+      ).toISOString();
     if (shipmentForm.note) body.note = shipmentForm.note;
     const result = await createShipment(body);
     handleToast({
@@ -310,15 +392,93 @@ export default function OrderDetailsPage() {
     }
   };
 
+  // === Flow-aware computed values ===
+  const isPickup = order?.orderType === "pickup";
+  const isOnlinePayment = order?.orderType === "online-payment";
+  const ORDER_FLOW = isPickup
+    ? PICKUP_FLOW
+    : isOnlinePayment
+      ? ONLINE_PAYMENT_FLOW
+      : COD_FLOW;
+
+  const allowedNextStatuses = getAllowedNextStatuses(
+    order?.status,
+    order?.orderType,
+    !!shipment,
+  );
+  const filteredStatusOptions = statusOptions.filter((o) =>
+    allowedNextStatuses.includes(o.value),
+  );
+
+  const allowedNextTracking = getAllowedNextTrackingStatuses(
+    shipment?.deliveryStatus,
+    shipment?.events?.map((e) => e.status) ?? [],
+  );
+  const filteredTrackingOptions = trackingStatusOptions.filter((o) =>
+    allowedNextTracking.includes(o.value),
+  );
+
   const canCreateShipment =
     !shipLoading &&
     !shipment &&
-    !["cancelled", "returned", "pending_payment"].includes(order?.status);
-  const canUpdateTracking =
-    shipment &&
-    !["delivered", "cancelled", "return-to-sender"].includes(
-      shipment?.deliveryStatus,
-    );
+    !isPickup &&
+    ["pending", "confirmed"].includes(order?.status);
+  const canUpdateTracking = shipment && allowedNextTracking.length > 0;
+  // Pickup payments auto-mark paid when admin marks delivered — no manual COD step
+  // Online-payment: already paid via SSLCommerz — no COD step
+  const canMarkCOD =
+    txn?.method === "cash-on-delivery" &&
+    !isPickup &&
+    !isOnlinePayment &&
+    txn?.status === "pending" &&
+    ["shipped", "delivered"].includes(order?.status);
+  const isTerminal = ["cancelled", "returned"].includes(order?.status);
+
+  // Next action hint for admin
+  const getNextActionHint = () => {
+    if (!order) return null;
+    if (isTerminal) return null;
+    if (order.status === "pending_payment")
+      return "Waiting for customer to complete online payment.";
+    // Pickup-specific hints
+    if (isPickup) {
+      if (order.status === "pending")
+        return "Confirm this pickup order so the customer can collect it.";
+      if (order.status === "confirmed")
+        return "Mark as Delivered once the customer has picked up their order.";
+      return null;
+    }
+    // Online-payment hints
+    if (isOnlinePayment) {
+      if (order.status === "confirmed" && !shipment)
+        return "Payment received. Create a shipment to begin fulfillment.";
+      if (order.status === "confirmed" && shipment)
+        return "Shipment created. Update tracking to 'In Transit' to mark as shipped.";
+      if (order.status === "shipped")
+        return "Update tracking to 'Delivered' to complete delivery.";
+      if (order.status === "delivered")
+        return "Order complete — payment already collected via online payment.";
+      return null;
+    }
+    // COD hints
+    if (order.status === "pending" && !shipment)
+      return "Confirm this order, or create a shipment (auto-confirms).";
+    if (order.status === "pending" && shipment)
+      return "Shipment exists. Confirm the order to proceed.";
+    if (order.status === "confirmed" && !shipment)
+      return "Create a shipment to begin fulfillment.";
+    if (order.status === "confirmed" && shipment)
+      return "Update tracking to 'In Transit' to mark as shipped.";
+    if (order.status === "shipped")
+      return (
+        "Update tracking to 'Delivered' to complete delivery." +
+        (canMarkCOD ? " Collect COD when ready." : "")
+      );
+    if (order.status === "delivered" && canMarkCOD)
+      return "Order delivered — mark COD as collected.";
+    return null;
+  };
+  const nextActionHint = getNextActionHint();
 
   if (isError) return <ErrorBoundaryFetcher />;
   if (isLoading)
@@ -362,6 +522,52 @@ export default function OrderDetailsPage() {
           {order?.status}
         </span>
       </div>
+
+      {/* Order Progress Stepper */}
+      {!isTerminal && (
+        <div className="flex items-center">
+          {ORDER_FLOW.map((step, i) => {
+            const currentIdx = ORDER_FLOW.indexOf(order?.status);
+            const isCompleted = i < currentIdx;
+            const isCurrent = i === currentIdx;
+            const stepLabel =
+              step === "pending_payment" ? "Pending Payment" : step;
+            return (
+              <Fragment key={step}>
+                {i > 0 && (
+                  <div
+                    className={`flex-1 h-0.5 ${
+                      i <= currentIdx
+                        ? "bg-primary"
+                        : "bg-gray-200 dark:bg-gray-700"
+                    }`}
+                  />
+                )}
+                <div
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
+                    isCurrent
+                      ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+                      : isCompleted
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+                  }`}
+                >
+                  {isCompleted && <LuCheck className="size-3" />}
+                  <span className="capitalize">{stepLabel}</span>
+                </div>
+              </Fragment>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Next Action Hint */}
+      {nextActionHint && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+          <LuClock className="size-4 shrink-0" />
+          <span>{nextActionHint}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Order Items */}
@@ -561,32 +767,46 @@ export default function OrderDetailsPage() {
                 </div>
                 {shipment.events?.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
                       Tracking Events
                     </p>
-                    <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
-                      {[...shipment.events].reverse().map((event, i) => (
-                        <div key={i} className="flex items-start gap-3 text-sm">
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                          <div className="flex-1">
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${deliveryStatusColors[event.status] || ""}`}
-                            >
-                              {event.status?.replace("-", " ")}
-                            </span>
-                            {event.note && (
-                              <p className="text-gray-600 dark:text-gray-400 mt-0.5 text-xs">
-                                {event.note}
-                              </p>
+                    <div className="space-y-3">
+                      {shipment.events.map((event, i) => {
+                        const info =
+                          trackingEventIcons[event.status] ||
+                          trackingEventIcons.pending;
+                        const EventIcon = info.icon;
+                        return (
+                          <div
+                            key={i}
+                            className="flex items-start gap-3 relative"
+                          >
+                            {i < shipment.events.length - 1 && (
+                              <div className="absolute left-[11px] top-6 w-0.5 h-[calc(100%+4px)] bg-gray-200 dark:bg-gray-700" />
                             )}
-                            <p className="text-xs text-gray-400">
-                              {moment(event.time).format(
-                                "DD MMM YYYY, hh:mm A",
+                            <div
+                              className={`w-[22px] h-[22px] rounded-full ${info.color} flex items-center justify-center shrink-0 z-10`}
+                            >
+                              <EventIcon className="size-3 text-white" />
+                            </div>
+                            <div className="flex-1 pb-0.5">
+                              <p className="text-sm font-medium text-gray-800 dark:text-white capitalize">
+                                {(event.status || "").replace(/-/g, " ")}
+                              </p>
+                              {event.note && (
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {event.note}
+                                </p>
                               )}
-                            </p>
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {moment(event.time).format(
+                                  "DD MMM YYYY, hh:mm A",
+                                )}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -600,17 +820,31 @@ export default function OrderDetailsPage() {
                   </Button>
                 )}
               </div>
+            ) : isPickup ? (
+              <div className="text-center py-4">
+                <LuPackage className="size-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">
+                  Pickup order — no shipment needed
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Customer will collect from store
+                </p>
+              </div>
             ) : (
               <div className="text-center py-4">
                 <LuTruck className="size-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
                 <p className="text-sm text-gray-500 mb-3">
                   No shipment created yet
                 </p>
-                {canCreateShipment && (
+                {canCreateShipment ? (
                   <Button onClick={createShipmentModal.open}>
                     <LuPlus className="size-4" /> Create Shipment
                   </Button>
-                )}
+                ) : !isTerminal && order?.status !== "pending_payment" ? (
+                  <p className="text-xs text-gray-400">
+                    Order must be pending or confirmed to create a shipment
+                  </p>
+                ) : null}
               </div>
             )}
           </div>
@@ -787,17 +1021,34 @@ export default function OrderDetailsPage() {
                 )}
               </div>
               <div className="mt-4 space-y-2">
+                {canMarkCOD && (
+                  <Button
+                    onClick={handleMarkCOD}
+                    disabled={codLoading}
+                    className="w-full"
+                  >
+                    <LuCheck className="size-4" />
+                    {codLoading ? "Marking..." : "Mark COD Collected"}
+                  </Button>
+                )}
                 {txn.method === "cash-on-delivery" &&
-                  txn.status === "pending" && (
-                    <Button
-                      onClick={handleMarkCOD}
-                      disabled={codLoading}
-                      className="w-full"
-                    >
-                      <LuCheck className="size-4" />
-                      {codLoading ? "Marking..." : "Mark COD Collected"}
-                    </Button>
+                  txn.status === "pending" &&
+                  !canMarkCOD &&
+                  !isPickup && (
+                    <p className="text-xs text-gray-400 text-center py-1">
+                      COD collection available after shipment
+                    </p>
                   )}
+                {isPickup && txn.status === "pending" && (
+                  <p className="text-xs text-gray-400 text-center py-1">
+                    Payment auto-marks paid when order is delivered
+                  </p>
+                )}
+                {isOnlinePayment && txn.status === "paid" && (
+                  <p className="text-xs text-green-500 text-center py-1">
+                    Paid via online payment
+                  </p>
+                )}
                 {txn.status === "paid" && (
                   <Button
                     variant="outline"
@@ -811,43 +1062,48 @@ export default function OrderDetailsPage() {
             </div>
           )}
           {/* Update Status */}
-          {order?.status !== "cancelled" &&
-            order?.status !== "delivered" &&
-            order?.status !== "returned" &&
-            order?.status !== "pending_payment" && (
-              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
-                <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">
-                  Update Status
-                </h2>
-                <div className="space-y-3">
-                  <Select
-                    label="New Status"
-                    options={statusOptions}
-                    value={statusData.status}
-                    onValueChange={(value) =>
-                      setStatusData((prev) => ({ ...prev, status: value }))
-                    }
-                  />
-                  <Textarea
-                    label="Notes (Optional)"
-                    placeholder="Add any notes..."
-                    value={statusData.notes}
-                    onValueChange={(value) =>
-                      setStatusData((prev) => ({ ...prev, notes: value }))
-                    }
-                    rows={3}
-                  />
-                  <Button
-                    onClick={handleStatusUpdate}
-                    disabled={updateLoading || !statusData.status}
-                    className="w-full"
-                  >
-                    <LuSave className="size-4" />
-                    {updateLoading ? "Updating..." : "Update Status"}
-                  </Button>
-                </div>
+          {filteredStatusOptions.length > 0 && (
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">
+                Update Status
+              </h2>
+              <p className="text-xs text-gray-500 mb-3">
+                Current:{" "}
+                <span className="font-medium capitalize">{order?.status}</span>{" "}
+                → Next:{" "}
+                <span className="font-medium capitalize">
+                  {allowedNextStatuses.join(", ")}
+                </span>
+              </p>
+              <div className="space-y-3">
+                <Select
+                  label="New Status"
+                  options={filteredStatusOptions}
+                  value={statusData.status}
+                  onValueChange={(value) =>
+                    setStatusData((prev) => ({ ...prev, status: value }))
+                  }
+                />
+                <Textarea
+                  label="Notes (Optional)"
+                  placeholder="Add any notes..."
+                  value={statusData.notes}
+                  onValueChange={(value) =>
+                    setStatusData((prev) => ({ ...prev, notes: value }))
+                  }
+                  rows={3}
+                />
+                <Button
+                  onClick={handleStatusUpdate}
+                  disabled={updateLoading || !statusData.status}
+                  className="w-full"
+                >
+                  <LuSave className="size-4" />
+                  {updateLoading ? "Updating..." : "Update Status"}
+                </Button>
               </div>
-            )}
+            </div>
+          )}
 
           {/* Order Type Info */}
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
@@ -1224,11 +1480,19 @@ export default function OrderDetailsPage() {
         <div className="space-y-4">
           <Select
             label="New Status"
-            options={trackingStatusOptions}
+            options={filteredTrackingOptions}
             value={trackingData.status}
             onValueChange={(v) => setTrackingData((p) => ({ ...p, status: v }))}
             requiredSign
           />
+          {shipment && (
+            <p className="text-xs text-gray-500 -mt-2">
+              Current:{" "}
+              <span className="font-medium capitalize">
+                {shipment.deliveryStatus?.replace("-", " ")}
+              </span>
+            </p>
+          )}
           <Textarea
             label="Note (Optional)"
             placeholder="Add a note about this update..."
