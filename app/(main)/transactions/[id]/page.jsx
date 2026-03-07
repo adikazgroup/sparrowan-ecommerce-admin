@@ -2,8 +2,6 @@
 
 import { useParams } from "next/navigation";
 import moment from "moment";
-import { toast } from "react-hot-toast";
-import { useState } from "react";
 import Link from "next/link";
 import {
   LuArrowLeft,
@@ -13,33 +11,17 @@ import {
   LuRotateCcw,
   LuCalendar,
   LuHash,
-  LuCheck,
   LuX,
   LuWallet,
+  LuUser,
+  LuPhone,
+  LuMapPin,
+  LuExternalLink,
+  LuShoppingCart,
 } from "react-icons/lu";
 
-import { Button } from "@/components/ui/button/Button";
-import { Input } from "@/components/ui/input/Input";
-import { Select } from "@/components/ui/select/Select";
-import { Textarea } from "@/components/ui/textarea/Textarea";
-import { useModal } from "@/lib/useModal";
-import { Modal } from "@/components/ui/modal/Modal";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
-import {
-  useGetSingleTransactionQuery,
-  useProcessRefundMutation,
-  useMarkCODCollectedMutation,
-} from "@/features/transactions/transactionsApiSlice";
-import { handleToast } from "@/utils/handleToast";
-
-const refundMethodOptions = [
-  { value: "", label: "Select Method" },
-  { value: "bkash", label: "bKash" },
-  { value: "nagad", label: "Nagad" },
-  { value: "bank-transfer", label: "Bank Transfer" },
-  { value: "cash", label: "Cash" },
-  { value: "sslcommerz-reverse", label: "SSLCommerz Reverse" },
-];
+import { useGetSingleTransactionQuery } from "@/features/transactions/transactionsApiSlice";
 
 const statusColors = {
   pending:
@@ -55,61 +37,8 @@ export default function TransactionDetailsPage() {
   const params = useParams();
   const txnId = params.id;
 
-  const [processRefund, { isLoading: refundLoading }] =
-    useProcessRefundMutation();
-  const [markCODCollected, { isLoading: codLoading }] =
-    useMarkCODCollectedMutation();
-  const refundModal = useModal();
-  const [refundData, setRefundData] = useState({
-    reason: "",
-    amount: "",
-    refundMethod: "",
-    refundNote: "",
-  });
-
   const { data, isLoading, isError } = useGetSingleTransactionQuery(txnId);
   const txn = data?.data;
-
-  const handleRefund = async () => {
-    if (!refundData.reason.trim()) {
-      toast.error("Please provide a refund reason");
-      return;
-    }
-    const result = await processRefund({
-      id: txnId,
-      reason: refundData.reason,
-      refundAmount: refundData.amount
-        ? parseFloat(refundData.amount)
-        : undefined,
-      refundMethod: refundData.refundMethod || undefined,
-      refundNote: refundData.refundNote || undefined,
-    });
-    handleToast({
-      result,
-      type: result?.data ? "success" : "error",
-      id: "refund",
-      message: "Refund processed!",
-    });
-    if (result?.data) {
-      refundModal.close();
-      setRefundData({
-        reason: "",
-        amount: "",
-        refundMethod: "",
-        refundNote: "",
-      });
-    }
-  };
-
-  const handleMarkCOD = async () => {
-    const result = await markCODCollected(txnId);
-    handleToast({
-      result,
-      type: result?.data ? "success" : "error",
-      id: "cod-collected",
-      message: "COD marked as collected!",
-    });
-  };
 
   if (isError) return <ErrorBoundaryFetcher />;
   if (isLoading)
@@ -161,8 +90,8 @@ export default function TransactionDetailsPage() {
                 <p className="text-gray-500 flex items-center gap-1.5">
                   <LuHash className="size-3.5" /> Transaction ID
                 </p>
-                <p className="font-mono font-medium text-gray-800 dark:text-white">
-                  {txn?.transactionId || "---"}
+                <p className="font-mono font-medium text-gray-800 dark:text-white break-all">
+                  {txn?.transactionId || txn?._id || "---"}
                 </p>
               </div>
               <div className="space-y-1">
@@ -201,26 +130,85 @@ export default function TransactionDetailsPage() {
               Linked Order
             </h2>
             {txn?.order ? (
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
-                <div>
-                  <Link
-                    href={`/orders/${txn.order._id}`}
-                    className="font-mono font-semibold text-primary hover:underline"
-                  >
-                    #{txn.order.orderNumber}
-                  </Link>
-                  <p className="text-xs text-gray-500 mt-1 capitalize">
-                    Status: {txn.order.status}
-                  </p>
+              <div className="space-y-4">
+                {/* Order header */}
+                <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <LuShoppingCart className="size-4 text-primary shrink-0" />
+                    <Link
+                      href={`/orders/${txn.order._id}`}
+                      className="font-mono font-semibold text-primary hover:underline text-base"
+                    >
+                      #{txn.order.orderNumber}
+                    </Link>
+                    <Link
+                      href={`/orders/${txn.order._id}`}
+                      className="text-gray-400 hover:text-primary"
+                    >
+                      <LuExternalLink className="size-3.5" />
+                    </Link>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-gray-800 dark:text-white text-lg">
+                      ৳{(txn.order.total || 0).toLocaleString("en-BD")}
+                    </p>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full capitalize font-medium ${
+                        txn.order.status === "delivered"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                          : txn.order.status === "cancelled"
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                            : txn.order.status === "shipped"
+                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+                      }`}
+                    >
+                      {txn.order.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-800 dark:text-white">
-                    ৳{(txn.order.total || 0).toLocaleString("en-BD")}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {txn.order.items?.length || 0} item(s)
-                  </p>
-                </div>
+
+                {/* Customer / Shipping info */}
+                {txn.order.shippingAddress && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-start gap-2">
+                      <LuUser className="size-4 text-gray-400 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-500">Customer</p>
+                        <p className="font-medium text-gray-800 dark:text-white">
+                          {txn.order.shippingAddress.name || "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <LuPhone className="size-4 text-gray-400 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-500">Phone</p>
+                        <p className="font-medium text-gray-800 dark:text-white">
+                          {txn.order.shippingAddress.phone || "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 sm:col-span-2">
+                      <LuMapPin className="size-4 text-gray-400 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-500">
+                          Shipping Address
+                        </p>
+                        <p className="font-medium text-gray-800 dark:text-white">
+                          {[
+                            txn.order.shippingAddress.street,
+                            txn.order.shippingAddress.city,
+                            txn.order.shippingAddress.state,
+                            txn.order.shippingAddress.country,
+                          ]
+                            .filter(Boolean)
+                            .join(", ") || "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-gray-500">No linked order</p>
@@ -359,45 +347,8 @@ export default function TransactionDetailsPage() {
           )}
         </div>
 
-        {/* Right Column */}
+        {/* Right Column — Timeline only */}
         <div className="space-y-6">
-          {/* Quick Actions */}
-          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 space-y-3">
-            <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-2">
-              Actions
-            </h2>
-            {txn?.status === "paid" && (
-              <Button
-                variant="outline"
-                onClick={refundModal.open}
-                className="w-full"
-              >
-                <LuRotateCcw className="size-4" />
-                Process Refund
-              </Button>
-            )}
-            {txn?.method === "cash-on-delivery" &&
-              txn?.status === "pending" && (
-                <Button
-                  onClick={handleMarkCOD}
-                  disabled={codLoading}
-                  className="w-full"
-                >
-                  <LuCheck className="size-4" />
-                  {codLoading ? "Marking..." : "Mark COD Collected"}
-                </Button>
-              )}
-            {txn?.status !== "paid" &&
-              !(
-                txn?.method === "cash-on-delivery" && txn?.status === "pending"
-              ) && (
-                <p className="text-sm text-gray-500 text-center py-2">
-                  No actions available
-                </p>
-              )}
-          </div>
-
-          {/* Status Timeline */}
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
             <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">
               Timeline
@@ -454,71 +405,6 @@ export default function TransactionDetailsPage() {
           </div>
         </div>
       </div>
-
-      {/* Refund Modal */}
-      <Modal
-        open={refundModal.isOpen}
-        onClose={refundModal.close}
-        title="Process Refund"
-      >
-        <div className="space-y-4">
-          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg space-y-1">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Transaction:{" "}
-              <span className="font-mono">
-                {txn?.transactionId || txn?._id}
-              </span>
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Amount:{" "}
-              <span className="font-semibold">৳{txn?.amount?.toFixed(2)}</span>
-            </p>
-          </div>
-          <Textarea
-            label="Refund Reason"
-            placeholder="Enter reason for refund..."
-            value={refundData.reason}
-            onValueChange={(value) =>
-              setRefundData((prev) => ({ ...prev, reason: value }))
-            }
-            rows={3}
-            requiredSign
-          />
-          <Input
-            label="Refund Amount (Optional)"
-            type="number"
-            placeholder="Leave empty for full refund"
-            value={refundData.amount}
-            onValueChange={(value) =>
-              setRefundData((prev) => ({ ...prev, amount: value }))
-            }
-          />
-          <Select
-            label="Refund Method"
-            options={refundMethodOptions}
-            value={refundData.refundMethod}
-            onValueChange={(value) =>
-              setRefundData((prev) => ({ ...prev, refundMethod: value }))
-            }
-          />
-          <Input
-            label="Refund Note (Optional)"
-            placeholder="e.g. bKash number, bank details..."
-            value={refundData.refundNote}
-            onValueChange={(value) =>
-              setRefundData((prev) => ({ ...prev, refundNote: value }))
-            }
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={refundModal.close}>
-              Close
-            </Button>
-            <Button onClick={handleRefund} disabled={refundLoading}>
-              {refundLoading ? "Processing..." : "Process Refund"}
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

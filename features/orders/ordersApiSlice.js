@@ -36,12 +36,12 @@ const ordersApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["orders"],
     }),
     processReturn: builder.mutation({
-      query: ({ id, status }) => ({
+      query: ({ id, status, refundAmount, refundMethod }) => ({
         url: `/admin/orders/${id}/return`,
         method: "PATCH",
-        body: { status },
+        body: { status, refundAmount, refundMethod },
       }),
-      invalidatesTags: ["orders"],
+      invalidatesTags: ["orders", "transactions"],
     }),
     deleteOrder: builder.mutation({
       query: (id) => ({ url: `/admin/orders/${id}`, method: "DELETE" }),

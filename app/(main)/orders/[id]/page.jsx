@@ -59,11 +59,11 @@ const statusOptions = [
   { value: "delivered", label: "Delivered" },
 ];
 
-const returnStatusOptions = [
-  { value: "requested", label: "Requested" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-  { value: "completed", label: "Completed" },
+const returnRefundMethodOptions = [
+  { value: "cash", label: "Cash" },
+  { value: "bank", label: "Bank Transfer" },
+  { value: "bkash", label: "Bkash" },
+  { value: "nogod", label: "Nogod" },
 ];
 
 const orderTypeLabels = {
@@ -81,14 +81,6 @@ const trackingStatusOptions = [
   { value: "delivered", label: "Delivered" },
   { value: "return-to-sender", label: "Return to Sender" },
   { value: "cancelled", label: "Cancelled" },
-];
-
-const refundMethodOptions = [
-  { value: "bkash", label: "bKash" },
-  { value: "nagad", label: "Nagad" },
-  { value: "bank-transfer", label: "Bank Transfer" },
-  { value: "cash", label: "Cash" },
-  { value: "sslcommerz-reverse", label: "SSLCommerz Reverse" },
 ];
 
 const txnStatusColors = {
@@ -207,8 +199,7 @@ export default function OrderDetailsPage() {
   const [cancelOrder, { isLoading: cancelLoading }] = useCancelOrderMutation();
   const [processReturn, { isLoading: returnLoading }] =
     useProcessReturnMutation();
-  const [processRefund, { isLoading: refundLoading }] =
-    useProcessRefundMutation();
+  const [processRefund] = useProcessRefundMutation();
   const [markCODCollected, { isLoading: codLoading }] =
     useMarkCODCollectedMutation();
   const [createShipment, { isLoading: createShipmentLoading }] =
@@ -217,20 +208,17 @@ export default function OrderDetailsPage() {
     useUpdateTrackingStatusMutation();
 
   const cancelModal = useModal();
-  const returnModal = useModal();
-  const refundModal = useModal();
   const createShipmentModal = useModal();
   const updateTrackingModal = useModal();
 
   const [statusData, setStatusData] = useState({ status: "", notes: "" });
   const [cancelReason, setCancelReason] = useState("");
-  const [returnStatus, setReturnStatus] = useState("");
-  const [refundData, setRefundData] = useState({
-    reason: "",
+  const [returnRefundData, setReturnRefundData] = useState({
     refundAmount: "",
     refundMethod: "",
-    refundNote: "",
   });
+  const [returnRefundError, setReturnRefundError] = useState("");
+  const [returnMethodError, setReturnMethodError] = useState("");
   const [shipmentForm, setShipmentForm] = useState({
     trackingNumber: "",
     estimatedDelivery: "",
@@ -289,52 +277,37 @@ export default function OrderDetailsPage() {
     }
   };
 
-  const handleProcessReturn = async () => {
-    if (!returnStatus) {
-      toast.error("Please select a return status");
-      return;
-    }
-    const result = await processReturn({ id: orderId, status: returnStatus });
+  const handleProcessReturn = async (status, extra = {}) => {
+    const payload = { id: orderId, status, ...extra };
+    const result = await processReturn(payload);
     handleToast({
       result,
       type: result?.data ? "success" : "error",
       id: "process-return",
-      message: "Return processed!",
+      message:
+        status === "approved"
+          ? "Return approved!"
+          : status === "rejected"
+            ? "Return rejected."
+            : status === "completed"
+              ? "Return completed — stock restored!"
+              : status === "refunded"
+                ? "Return refunded!"
+                : "Return processed!",
     });
     if (result?.data) {
-      returnModal.close();
-      setReturnStatus("");
-    }
-  };
-
-  const handleRefund = async () => {
-    if (!refundData.reason.trim()) {
-      toast.error("Please provide a refund reason");
-      return;
-    }
-    const result = await processRefund({
-      id: txn?._id,
-      reason: refundData.reason,
-      refundAmount: refundData.refundAmount
-        ? parseFloat(refundData.refundAmount)
-        : undefined,
-      refundMethod: refundData.refundMethod || undefined,
-      refundNote: refundData.refundNote || undefined,
-    });
-    handleToast({
-      result,
-      type: result?.data ? "success" : "error",
-      id: "refund",
-      message: "Refund processed!",
-    });
-    if (result?.data) {
-      refundModal.close();
-      setRefundData({
-        reason: "",
-        refundAmount: "",
-        refundMethod: "",
-        refundNote: "",
-      });
+      // When marking refunded, also mark the transaction as refunded
+      if (status === "refunded" && txn?._id) {
+        await processRefund({
+          id: txn._id,
+          reason: "Order return refund",
+          refundAmount: extra.refundAmount || undefined,
+          refundMethod: extra.refundMethod || undefined,
+        });
+      }
+      setReturnRefundData({ refundAmount: "", refundMethod: "" });
+      setReturnRefundError("");
+      setReturnMethodError("");
     }
   };
 
@@ -849,62 +822,300 @@ export default function OrderDetailsPage() {
             )}
           </div>
 
-          {/* Return Info */}
-          {order?.return?.status && (
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
+          {/* Return & Refund Section */}
+          {(order?.return?.status || order?.status === "delivered") && (
+            <div
+              className={`rounded-xl p-5 ${
+                order?.return?.status === "refunded"
+                  ? "bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800/30"
+                  : order?.return?.status === "rejected"
+                    ? "bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30"
+                    : "bg-gray-50 dark:bg-gray-900/50"
+              }`}
+            >
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <LuRotateCcw className="size-4" /> Return Info
+                <LuRotateCcw className="size-4" />
+                Return & Refund
               </h2>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Status</span>
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-                      order.return.status === "completed"
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                        : order.return.status === "rejected"
-                          ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                          : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                    }`}
-                  >
-                    {order.return.status}
-                  </span>
+
+              {!order?.return?.status ? (
+                /* No return requested yet — show informational text */
+                <div className="text-center py-3">
+                  <p className="text-sm text-gray-500">
+                    No return request from customer yet.
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Customer can submit a return request from their account.
+                  </p>
                 </div>
-                {order.return.reason && (
-                  <div>
-                    <p className="text-gray-500">Reason</p>
-                    <p className="text-gray-800 dark:text-white">
-                      {order.return.reason}
-                    </p>
+              ) : (
+                <div className="space-y-4">
+                  {/* Return Status Progress */}
+                  <div className="flex items-center gap-1">
+                    {["requested", "approved", "completed", "refunded"].map(
+                      (step, i, arr) => {
+                        const statusOrder = [
+                          "requested",
+                          "approved",
+                          "completed",
+                          "refunded",
+                        ];
+                        const currentIdx = statusOrder.indexOf(
+                          order.return.status,
+                        );
+                        const stepIdx = i;
+                        const isCompleted = stepIdx < currentIdx;
+                        const isCurrent = stepIdx === currentIdx;
+                        const isRejected = order.return.status === "rejected";
+                        return (
+                          <Fragment key={step}>
+                            {i > 0 && (
+                              <div
+                                className={`flex-1 h-0.5 ${
+                                  isRejected
+                                    ? "bg-red-200 dark:bg-red-800"
+                                    : isCompleted
+                                      ? "bg-green-400"
+                                      : isCurrent
+                                        ? "bg-primary/40"
+                                        : "bg-gray-200 dark:bg-gray-700"
+                                }`}
+                              />
+                            )}
+                            <span
+                              className={`px-2 py-1 rounded-full text-[10px] font-medium capitalize whitespace-nowrap ${
+                                isRejected && step === "requested"
+                                  ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                                  : isCurrent
+                                    ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+                                    : isCompleted
+                                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                      : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+                              }`}
+                            >
+                              {isCompleted && (
+                                <LuCheck className="size-2.5 inline mr-0.5" />
+                              )}
+                              {step}
+                            </span>
+                          </Fragment>
+                        );
+                      },
+                    )}
                   </div>
-                )}
-                {order.return.requestedAt && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Requested</span>
-                    <span className="text-gray-800 dark:text-white">
-                      {moment(order.return.requestedAt).format(
-                        "DD MMM, hh:mm A",
+
+                  {/* Rejected badge */}
+                  {order.return.status === "rejected" && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                      <LuX className="size-4 text-red-600" />
+                      <span className="text-sm text-red-700 dark:text-red-300 font-medium">
+                        Return request was rejected
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Return reason */}
+                  {order.return.reason && (
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-sm">
+                      <p className="text-xs text-gray-500 mb-1">
+                        Customer&apos;s Return Reason
+                      </p>
+                      <p className="text-gray-800 dark:text-white">
+                        {order.return.reason}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Timeline dates */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {order.return.requestedAt && (
+                      <div>
+                        <p className="text-gray-500">Requested</p>
+                        <p className="text-gray-800 dark:text-white font-medium">
+                          {moment(order.return.requestedAt).format(
+                            "DD MMM YYYY, hh:mm A",
+                          )}
+                        </p>
+                      </div>
+                    )}
+                    {order.return.completedAt && (
+                      <div>
+                        <p className="text-gray-500">Item Received</p>
+                        <p className="text-gray-800 dark:text-white font-medium">
+                          {moment(order.return.completedAt).format(
+                            "DD MMM YYYY, hh:mm A",
+                          )}
+                        </p>
+                      </div>
+                    )}
+                    {order.return.refundedAt && (
+                      <div>
+                        <p className="text-gray-500">Refunded</p>
+                        <p className="text-gray-800 dark:text-white font-medium">
+                          {moment(order.return.refundedAt).format(
+                            "DD MMM YYYY, hh:mm A",
+                          )}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Refund details (if refunded) */}
+                  {order.return.status === "refunded" && (
+                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 space-y-1.5 text-sm border border-orange-200 dark:border-orange-800/30">
+                      <p className="text-xs font-medium text-orange-700 dark:text-orange-300 uppercase tracking-wide">
+                        Refund Details
+                      </p>
+                      {order.return.refundAmount != null && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">
+                            Refund Amount
+                          </span>
+                          <span className="font-semibold text-orange-600">
+                            ৳{order.return.refundAmount?.toFixed(2)}
+                          </span>
+                        </div>
                       )}
-                    </span>
-                  </div>
-                )}
-                {order.return.refundAmount && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Refund Amount</span>
-                    <span className="font-semibold text-orange-600">
-                      ৳{order.return.refundAmount?.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                {order.return.refundMethod && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Via</span>
-                    <span className="text-gray-800 dark:text-white capitalize">
-                      {order.return.refundMethod}
-                    </span>
-                  </div>
-                )}
-              </div>
+                      {order.return.refundMethod && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">
+                            Method
+                          </span>
+                          <span className="text-gray-800 dark:text-white capitalize">
+                            {order.return.refundMethod}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action buttons based on current status */}
+                  {order.return.status === "requested" && (
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        onClick={() => handleProcessReturn("approved")}
+                        disabled={returnLoading}
+                        className="flex-1"
+                      >
+                        <LuCheck className="size-4" />
+                        {returnLoading ? "Processing..." : "Approve Return"}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleProcessReturn("rejected")}
+                        disabled={returnLoading}
+                        className="flex-1"
+                      >
+                        <LuX className="size-4" />
+                        Reject
+                      </Button>
+                    </div>
+                  )}
+
+                  {order.return.status === "approved" && (
+                    <div className="space-y-2 pt-1">
+                      <p className="text-xs text-gray-500">
+                        Mark as completed once the returned item is physically
+                        received. Stock will be restored automatically.
+                      </p>
+                      <Button
+                        onClick={() => handleProcessReturn("completed")}
+                        disabled={returnLoading}
+                        className="w-full"
+                      >
+                        <LuPackage className="size-4" />
+                        {returnLoading
+                          ? "Processing..."
+                          : "Mark Completed (Item Received)"}
+                      </Button>
+                    </div>
+                  )}
+
+                  {order.return.status === "completed" && (
+                    <div className="space-y-3 pt-1">
+                      <p className="text-xs text-gray-500">
+                        Item received. Process refund to the customer.
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Input
+                            label="Refund Amount"
+                            type="number"
+                            placeholder={`e.g. ৳${order?.total?.toFixed(2)}`}
+                            value={returnRefundData.refundAmount}
+                            onValueChange={(v) => {
+                              setReturnRefundError("");
+                              setReturnRefundData((p) => ({
+                                ...p,
+                                refundAmount: v,
+                              }));
+                            }}
+                            requiredSign
+                          />
+                          {returnRefundError && (
+                            <p className="text-xs text-red-500 mt-1">
+                              {returnRefundError}
+                            </p>
+                          )}
+                        </div>
+                        <Select
+                          label="Refund Method"
+                          options={returnRefundMethodOptions}
+                          value={returnRefundData.refundMethod}
+                          onValueChange={(v) => {
+                            setReturnMethodError("");
+                            setReturnRefundData((p) => ({
+                              ...p,
+                              refundMethod: v,
+                            }));
+                          }}
+                          placeholder="Select"
+                          requiredSign
+                          error={returnMethodError}
+                        />
+                      </div>
+                      <Button
+                        onClick={() => {
+                          if (!returnRefundData.refundAmount) {
+                            setReturnRefundError("Refund amount is required");
+                            return;
+                          }
+                          const parsed = parseFloat(
+                            returnRefundData.refundAmount,
+                          );
+                          if (isNaN(parsed) || parsed <= 0) {
+                            setReturnRefundError(
+                              "Amount must be greater than 0",
+                            );
+                            return;
+                          }
+                          if (parsed > (order?.total || 0)) {
+                            setReturnRefundError(
+                              `Cannot exceed order total (৳${order?.total?.toFixed(2)})`,
+                            );
+                            return;
+                          }
+                          if (!returnRefundData.refundMethod) {
+                            setReturnMethodError("Refund method is required");
+                            return;
+                          }
+                          setReturnRefundError("");
+                          setReturnMethodError("");
+                          handleProcessReturn("refunded", {
+                            refundAmount: parsed,
+                            refundMethod: returnRefundData.refundMethod,
+                          });
+                        }}
+                        disabled={returnLoading}
+                        className="w-full"
+                      >
+                        <LuWallet className="size-4" />
+                        {returnLoading ? "Processing..." : "Process Refund"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1048,15 +1259,6 @@ export default function OrderDetailsPage() {
                   <p className="text-xs text-green-500 text-center py-1">
                     Paid via online payment
                   </p>
-                )}
-                {txn.status === "paid" && (
-                  <Button
-                    variant="outline"
-                    onClick={refundModal.open}
-                    className="w-full"
-                  >
-                    <LuRotateCcw className="size-4" /> Process Refund
-                  </Button>
                 )}
               </div>
             </div>
@@ -1280,17 +1482,6 @@ export default function OrderDetailsPage() {
                   Cancel Order
                 </Button>
               )}
-
-            {order?.return?.status && (
-              <Button
-                variant="outline"
-                onClick={returnModal.open}
-                className="w-full"
-              >
-                <LuRotateCcw className="size-4" />
-                Process Return
-              </Button>
-            )}
           </div>
         </div>
       </div>
@@ -1324,103 +1515,6 @@ export default function OrderDetailsPage() {
               disabled={cancelLoading}
             >
               {cancelLoading ? "Cancelling..." : "Cancel Order"}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Return Modal */}
-      <Modal
-        open={returnModal.isOpen}
-        onClose={returnModal.close}
-        title="Process Return"
-      >
-        <div className="space-y-4">
-          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Return Reason:
-            </p>
-            <p className="text-gray-800 dark:text-white">
-              {order?.return?.reason || "N/A"}
-            </p>
-          </div>
-          <Select
-            label="Return Status"
-            options={returnStatusOptions}
-            value={returnStatus}
-            onValueChange={setReturnStatus}
-            requiredSign
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={returnModal.close}>
-              Close
-            </Button>
-            <Button onClick={handleProcessReturn} disabled={returnLoading}>
-              {returnLoading ? "Processing..." : "Update Return"}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Refund Modal */}
-      <Modal
-        open={refundModal.isOpen}
-        onClose={refundModal.close}
-        title="Process Refund"
-      >
-        <div className="space-y-4">
-          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Transaction:{" "}
-              <span className="font-mono text-xs">
-                {txn?.transactionId || txn?._id}
-              </span>
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Amount:{" "}
-              <span className="font-semibold">৳{txn?.amount?.toFixed(2)}</span>
-            </p>
-          </div>
-          <Textarea
-            label="Refund Reason"
-            placeholder="Enter reason for refund..."
-            value={refundData.reason}
-            onValueChange={(v) => setRefundData((p) => ({ ...p, reason: v }))}
-            rows={3}
-            requiredSign
-          />
-          <Input
-            label="Refund Amount (Optional)"
-            type="number"
-            placeholder="Leave empty for full refund"
-            value={refundData.refundAmount}
-            onValueChange={(v) =>
-              setRefundData((p) => ({ ...p, refundAmount: v }))
-            }
-          />
-          <Select
-            label="Refund Method"
-            options={refundMethodOptions}
-            value={refundData.refundMethod}
-            onValueChange={(v) =>
-              setRefundData((p) => ({ ...p, refundMethod: v }))
-            }
-            placeholder="Select method"
-          />
-          <Input
-            label="Note (Optional)"
-            placeholder="e.g. Sent to 01XXXXXXXXX"
-            value={refundData.refundNote}
-            onValueChange={(v) =>
-              setRefundData((p) => ({ ...p, refundNote: v }))
-            }
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={refundModal.close}>
-              Close
-            </Button>
-            <Button onClick={handleRefund} disabled={refundLoading}>
-              {refundLoading ? "Processing..." : "Process Refund"}
             </Button>
           </div>
         </div>

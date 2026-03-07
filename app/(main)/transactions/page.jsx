@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import moment from "moment";
-import { toast } from "react-hot-toast";
 import {
   LuEye,
   LuRefreshCw,
@@ -12,25 +11,15 @@ import {
   LuCheck,
   LuRotateCcw,
   LuCreditCard,
-  LuDollarSign,
   LuWallet,
 } from "react-icons/lu";
 
-import { useModal } from "@/lib/useModal";
 import { Table } from "@/components/ui/table/Table";
-import { Button } from "@/components/ui/button/Button";
-import { Modal } from "@/components/ui/modal/Modal";
-import { Input } from "@/components/ui/input/Input";
 import { Select } from "@/components/ui/select/Select";
-import { Textarea } from "@/components/ui/textarea/Textarea";
+import { Input } from "@/components/ui/input/Input";
 import { TableSkeleton } from "@/components/skeleton/TableSkeleton";
 import ErrorBoundaryFetcher from "@/components/errors/ErrorBoundaryFetcher";
-import {
-  useGetTransactionListQuery,
-  useProcessRefundMutation,
-  useMarkCODCollectedMutation,
-} from "@/features/transactions/transactionsApiSlice";
-import { handleToast } from "@/utils/handleToast";
+import { useGetTransactionListQuery } from "@/features/transactions/transactionsApiSlice";
 
 const statusFilterOptions = [
   { value: "", label: "All Status" },
@@ -99,19 +88,6 @@ const methodConfig = {
 };
 
 export default function TransactionsPage() {
-  const [processRefund, { isLoading: refundLoading }] =
-    useProcessRefundMutation();
-  const [markCODCollected, { isLoading: codLoading }] =
-    useMarkCODCollectedMutation();
-
-  const refundModal = useModal();
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [refundData, setRefundData] = useState({
-    reason: "",
-    amount: "",
-    refundMethod: "",
-    refundNote: "",
-  });
   const [filterData, setFilterData] = useState({
     searchTerm: "",
     status: "",
@@ -142,48 +118,6 @@ export default function TransactionsPage() {
   const clearSearch = () =>
     setFilterData((prev) => ({ ...prev, searchTerm: "" }));
 
-  const handleRefund = async () => {
-    if (!refundData.reason.trim()) {
-      toast.error("Please provide a refund reason");
-      return;
-    }
-    const result = await processRefund({
-      id: selectedItem._id,
-      reason: refundData.reason,
-      refundAmount: refundData.amount
-        ? parseFloat(refundData.amount)
-        : undefined,
-      refundMethod: refundData.refundMethod || undefined,
-      refundNote: refundData.refundNote || undefined,
-    });
-    handleToast({
-      result,
-      type: result?.data ? "success" : "error",
-      id: "process-refund",
-      message: "Refund processed!",
-    });
-    if (result?.data) {
-      refundModal.close();
-      setRefundData({
-        reason: "",
-        amount: "",
-        refundMethod: "",
-        refundNote: "",
-      });
-      setSelectedItem(null);
-    }
-  };
-
-  const handleMarkCOD = async (txn) => {
-    const result = await markCODCollected(txn._id);
-    handleToast({
-      result,
-      type: result?.data ? "success" : "error",
-      id: "mark-cod",
-      message: "COD marked as collected!",
-    });
-  };
-
   const columns = [
     {
       id: "transactionId",
@@ -202,10 +136,10 @@ export default function TransactionsPage() {
       header: "Order",
       cell: (_, row) => (
         <Link
-          href={`/orders/${row.order?._id}`}
+          href={`/orders/${row?.order}`}
           className="font-mono font-semibold text-primary hover:underline"
         >
-          {row.order?.orderNumber || "---"}
+          {row?.orderNumber || "---"}
         </Link>
       ),
     },
@@ -267,9 +201,9 @@ export default function TransactionsPage() {
     },
     {
       id: "actions",
-      header: "Actions",
+      header: "",
       cell: (_, row) => (
-        <div className="flex justify-end gap-1">
+        <div className="flex justify-end">
           <Link
             href={`/transactions/${row._id}`}
             className="size-8 center text-blue-600 bg-blue-100/50 rounded dark:text-blue-300 dark:bg-blue-900/30"
@@ -277,32 +211,6 @@ export default function TransactionsPage() {
           >
             <LuEye className="size-4" />
           </Link>
-          {row.status === "paid" && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedItem(row);
-                refundModal.open();
-              }}
-              className="size-8 center text-orange-600 bg-orange-100/50 rounded dark:text-orange-300 dark:bg-orange-900/30"
-              title="Process Refund"
-            >
-              <LuRotateCcw className="size-4" />
-            </button>
-          )}
-          {row.method === "cash-on-delivery" && row.status === "pending" && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleMarkCOD(row);
-              }}
-              disabled={codLoading}
-              className="size-8 center text-green-600 bg-green-100/50 rounded dark:text-green-300 dark:bg-green-900/30"
-              title="Mark as Collected"
-            >
-              <LuDollarSign className="size-4" />
-            </button>
-          )}
         </div>
       ),
     },
@@ -390,73 +298,6 @@ export default function TransactionsPage() {
           />
         </>
       )}
-
-      {/* Refund Modal */}
-      <Modal
-        open={refundModal.isOpen}
-        onClose={refundModal.close}
-        title="Process Refund"
-      >
-        <div className="space-y-4">
-          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg space-y-1">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Transaction ID:{" "}
-              <span className="font-mono">
-                {selectedItem?.transactionId || "---"}
-              </span>
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Amount:{" "}
-              <span className="font-semibold">
-                ৳{selectedItem?.amount?.toFixed(2)}
-              </span>
-            </p>
-          </div>
-          <Textarea
-            label="Refund Reason"
-            placeholder="Enter reason for refund..."
-            value={refundData.reason}
-            onValueChange={(value) =>
-              setRefundData((prev) => ({ ...prev, reason: value }))
-            }
-            rows={3}
-            requiredSign
-          />
-          <Input
-            label="Refund Amount (Optional)"
-            type="number"
-            placeholder="Leave empty for full refund"
-            value={refundData.amount}
-            onValueChange={(value) =>
-              setRefundData((prev) => ({ ...prev, amount: value }))
-            }
-          />
-          <Select
-            label="Refund Method"
-            options={refundMethodOptions}
-            value={refundData.refundMethod}
-            onValueChange={(value) =>
-              setRefundData((prev) => ({ ...prev, refundMethod: value }))
-            }
-          />
-          <Input
-            label="Refund Note (Optional)"
-            placeholder="e.g. bKash number, bank details..."
-            value={refundData.refundNote}
-            onValueChange={(value) =>
-              setRefundData((prev) => ({ ...prev, refundNote: value }))
-            }
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={refundModal.close}>
-              Close
-            </Button>
-            <Button onClick={handleRefund} disabled={refundLoading}>
-              {refundLoading ? "Processing..." : "Process Refund"}
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }
